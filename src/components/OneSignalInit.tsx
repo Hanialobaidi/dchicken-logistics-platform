@@ -12,27 +12,13 @@ const ONESIGNAL_APP_ID =
 
 export function OneSignalInit() {
   useEffect(() => {
-    if (!ONESIGNAL_APP_ID) {
-      console.warn('[OneSignal] VITE_ONESIGNAL_APP_ID not set — push disabled')
-      return
-    }
-    if (typeof window === 'undefined') return
+    if (!ONESIGNAL_APP_ID || typeof window === 'undefined') return
 
     window.OneSignalDeferred = window.OneSignalDeferred || []
     window.OneSignalDeferred.push(async (OneSignal: any) => {
       await OneSignal.init({
         appId: ONESIGNAL_APP_ID,
-        serviceWorkerParam: { scope: '/' },
-        serviceWorkerPath: '/OneSignalSDKWorker.js',
-        serviceWorkerUpdaterParam: { scope: '/' },
-        notifyButton: { enable: false },
-        allowLocalhostAsSecureOrigin: true,
       })
-
-      // Explicitly request notification permission if not yet granted
-      if ('Notification' in window && Notification.permission === 'default') {
-        await OneSignal.Notifications.requestPermission()
-      }
     })
   }, [])
 

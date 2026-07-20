@@ -61,16 +61,5 @@ export default defineConfig({
   build: {
     outDir: '.vite-out',
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-query': ['@tanstack/react-query'],
-          'vendor-router': ['@tanstack/react-router'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-recharts': ['recharts'],
-        },
-      },
-    },
   },
 });

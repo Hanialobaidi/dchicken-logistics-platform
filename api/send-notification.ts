@@ -35,6 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         contents: { en: body, ar: body },
         url: url || undefined,
         included_segments: ['Subscribed Users'],
+        isAnyWeb: true,
       }),
     })
 

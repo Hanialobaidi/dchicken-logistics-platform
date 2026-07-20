@@ -687,6 +687,7 @@ function EditOrderDialog({
   driverId,
   driverName,
   onSaved,
+  onInvoiceIssued,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -706,6 +707,7 @@ function EditOrderDialog({
   driverId: string
   driverName: string
   onSaved: () => void
+  onInvoiceIssued: (data: InvoiceData) => void
 }) {
   const updateOrder = useUpdateDirectOrder()
   const createInvoice = useCreateInvoice()
@@ -716,7 +718,6 @@ function EditOrderDialog({
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
   const [notes, setNotes] = useState('')
-  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null)
 
   useEffect(() => {
     if (order && open) {
@@ -733,6 +734,8 @@ function EditOrderDialog({
   const priceNum = Number(pricePerKg) || 0
   const totalPrice = weightNum * priceNum
   const taxFields = weightNum > 0 && priceNum > 0 ? computeTaxFields(weightNum, priceNum) : null
+
+  const isSubmitting = updateOrder.isPending || createInvoice.isPending
 
   const handleSubmit = async () => {
     if (!order || !actualWeight.trim() || !pricePerKg) return
@@ -787,7 +790,10 @@ function EditOrderDialog({
       paymentStatus: order.paymentStatus,
     })
 
-    setInvoiceData({
+    onSaved()
+    onOpenChange(false)
+
+    onInvoiceIssued({
       invoiceNumber: invoiceNum,
       date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
       restaurantName: order.restaurantName,
@@ -801,14 +807,11 @@ function EditOrderDialog({
     })
 
     toast.success('تم تعديل الطلبية وإصدار الفاتورة')
-    onSaved()
-    onOpenChange(false)
   }
 
   if (!order) return null
 
   return (
-    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md gap-0 p-0 overflow-hidden" dir="rtl">
         <div className="border-b px-6 py-4">
@@ -908,7 +911,7 @@ function EditOrderDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={updateOrder.isPending}
+            disabled={isSubmitting}
             className="flex-1"
           >
             إلغاء
@@ -916,31 +919,21 @@ function EditOrderDialog({
           <Button
             variant="outline"
             onClick={handleSubmit}
-            disabled={updateOrder.isPending || !actualWeight.trim() || !pricePerKg}
+            disabled={isSubmitting || !actualWeight.trim() || !pricePerKg}
             className="flex-1 gap-2"
           >
-            {updateOrder.isPending && <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />}
             حفظ فقط
           </Button>
           <Button
             onClick={handleIssueInvoice}
-            disabled={updateOrder.isPending || createInvoice.isPending || !actualWeight.trim() || !pricePerKg}
+            disabled={isSubmitting || !actualWeight.trim() || !pricePerKg}
             className="flex-1 gap-2"
           >
-            {(updateOrder.isPending || createInvoice.isPending) && <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />}
             تعديل وإصدار فاتورة
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-
-    {invoiceData && (
-      <InvoicePreview
-        data={invoiceData}
-        onClose={() => setInvoiceData(null)}
-      />
-    )}
-    </>
   )
 }
 
@@ -952,6 +945,7 @@ function DriverDashboard() {
   const [selectedDriverId, setSelectedDriverId] = useState('')
   const [directOrderOpen, setDirectOrderOpen] = useState(false)
   const [editingOrder, setEditingOrder] = useState<DirectOrder | null>(null)
+  const [editInvoiceData, setEditInvoiceData] = useState<InvoiceData | null>(null)
   const updateOrder = useUpdateDirectOrder()
   const deleteOrder = useDeleteDirectOrder()
 
@@ -1230,7 +1224,16 @@ function DriverDashboard() {
         driverId={effectiveDriverId}
         driverName={effectiveDriverName}
         onSaved={() => setEditingOrder(null)}
+        onInvoiceIssued={(data) => setEditInvoiceData(data)}
       />
+
+      {/* Edit Order Invoice Preview */}
+      {editInvoiceData && (
+        <InvoicePreview
+          data={editInvoiceData}
+          onClose={() => setEditInvoiceData(null)}
+        />
+      )}
 
       <ScrollToTop />
     </div>

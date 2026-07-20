@@ -36,11 +36,12 @@ class SupabaseTable {
   constructor(private tableName: string) {}
 
   async list<T = Record<string, unknown>>(opts?: {
+    select?: string
     orderBy?: Record<string, 'asc' | 'desc'>
     where?: Record<string, unknown> | { AND?: Record<string, unknown>[] }
     limit?: number
   }): Promise<T[]> {
-    let query = supabase.from(this.tableName).select('*')
+    let query = supabase.from(this.tableName).select(opts?.select ?? '*')
 
     if (opts?.where) {
       if (opts.where.AND && Array.isArray(opts.where.AND)) {
@@ -52,7 +53,17 @@ class SupabaseTable {
       } else {
         for (const [key, value] of Object.entries(opts.where)) {
           if (key !== 'AND') {
-            query = query.eq(toSnakeCase(key), value)
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+              const filters = value as Record<string, unknown>
+              for (const [op, val] of Object.entries(filters)) {
+                if (op === 'gte') query = query.gte(toSnakeCase(key), val)
+                else if (op === 'lte') query = query.lte(toSnakeCase(key), val)
+                else if (op === 'in') query = query.in(toSnakeCase(key), val as unknown[])
+                else query = query.eq(toSnakeCase(key), val)
+              }
+            } else {
+              query = query.eq(toSnakeCase(key), value)
+            }
           }
         }
       }
@@ -70,7 +81,7 @@ class SupabaseTable {
 
     const { data, error } = await query
     if (error) throw new Error(error.message)
-    return (data ?? []).map((row) => rowToCamel<T>(row as Record<string, unknown>))
+    return (data ?? []).map((row) => rowToCamel<T>(row as unknown as Record<string, unknown>))
   }
 
   async get<T = Record<string, unknown>>(id: string): Promise<T | null> {

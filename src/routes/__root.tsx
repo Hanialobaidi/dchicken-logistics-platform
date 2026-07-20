@@ -85,9 +85,9 @@ function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl">
       <head>
-        {/* MUST be first: sets the theme class before paint so there is no
-            flash-of-wrong-theme. Do not move below <HeadContent />. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <link rel="preconnect" href="https://qstvssfmxblmzevqsycq.supabase.co" />
+        <link rel="dns-prefetch" href="https://qstvssfmxblmzevqsycq.supabase.co" />
         <HeadContent />
         {/*
           WebSite + Organization entity (rendered on every page, once at the root).
@@ -109,15 +109,21 @@ function RootDocument({ children }: { children: ReactNode }) {
         />
         
         <script
-          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-          defer
-        />
-        <script
           dangerouslySetInnerHTML={{
             __html: `window.OneSignalDeferred = window.OneSignalDeferred || [];
 window.OneSignalDeferred.push(async function(OneSignal) {
   await OneSignal.init({ appId: '7fea93f9-59a6-4c94-8b82-1ae65d133ff6' });
-});`,
+});
+(function(){
+  function loadOS(){
+    var s=document.createElement('script');
+    s.src='https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+    s.defer=true;
+    document.head.appendChild(s);
+  }
+  if('requestIdleCallback' in window){ requestIdleCallback(loadOS); }
+  else { setTimeout(loadOS, 2000); }
+})();`,
           }}
         />
       </head>

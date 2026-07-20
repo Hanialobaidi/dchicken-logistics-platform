@@ -966,7 +966,7 @@ function DriverDashboard() {
   const { data: trip, isLoading: tripLoading } = useDriverTrip(effectiveDriverId)
   const stops = trip?.restaurants ?? []
   const { data: allDirectOrders = [] } = useDirectOrders(effectiveDriverId)
-  const { data: allInvoices = [] } = useInvoices()
+  const { data: allInvoices = [] } = useInvoices(effectiveDriverId)
 
   const invoiceByOrderId = useMemo(() => {
     const map = new Map<string, typeof allInvoices[0]>()

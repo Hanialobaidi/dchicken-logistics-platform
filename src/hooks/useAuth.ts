@@ -37,6 +37,11 @@ export function useAuth(): AuthState {
       return
     }
 
+    if (user) {
+      setIsLoading(false)
+      return
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser({

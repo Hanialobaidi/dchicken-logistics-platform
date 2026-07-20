@@ -9,7 +9,7 @@ import type { Purchase, DirectOrder, Trip, Invoice } from '@/types'
 export function useInventory() {
   const purchases = useQuery({
     queryKey: ['purchases'],
-    queryFn: () => purchasesTable.list<Purchase>({ orderBy: { purchaseDate: 'desc' } }),
+    queryFn: () => purchasesTable.list<Purchase>({ select: 'id, quantity_kg, purchase_date', orderBy: { purchaseDate: 'desc' } }),
   })
 
   const directOrders = useQuery({
@@ -19,7 +19,7 @@ export function useInventory() {
 
   const trips = useQuery({
     queryKey: ['trips'],
-    queryFn: () => tripsTable.list<Trip>({ orderBy: { createdAt: 'desc' } }),
+    queryFn: () => tripsTable.list<Trip>({ select: 'id, status, total_weight, created_at', orderBy: { createdAt: 'desc' } }),
   })
 
   const totalPurchasedKg = useMemo(
@@ -57,10 +57,14 @@ export function useInventory() {
 
 /* ─── Invoices ─── */
 
-export function useInvoices() {
+export function useInvoices(driverId?: string) {
   return useQuery({
-    queryKey: ['invoices'],
-    queryFn: () => invoicesTable.list<Invoice>({ orderBy: { createdAt: 'desc' } }),
+    queryKey: ['invoices', { driverId }],
+    queryFn: () => {
+      const opts: Record<string, unknown> = { orderBy: { createdAt: 'desc' } }
+      if (driverId) opts.where = { driverId }
+      return invoicesTable.list<Invoice>(opts)
+    },
   })
 }
 

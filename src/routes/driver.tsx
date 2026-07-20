@@ -37,6 +37,7 @@ import { ScrollToTop } from '@/components/ScrollToTop'
 import type { InvoiceData } from '@/components/InvoicePreview'
 import { CHICKEN_TYPES } from '@/types'
 import type { DirectOrder } from '@/types'
+import { notifyAdminNewOrder } from '@/lib/notifyAdmin'
 import {
   Truck,
   Store,
@@ -318,6 +319,9 @@ function DirectOrderDialog({
         paymentStatus,
         chickenType: effectiveChickenType,
       })
+
+      // Fire push notification to admin (best-effort, non-blocking)
+      notifyAdminNewOrder({ driverName, restaurantName: name, weight: weightNum })
 
       toast.success('تم تسجيل الطلبية وحفظ الفاتورة بنجاح')
       resetForm()

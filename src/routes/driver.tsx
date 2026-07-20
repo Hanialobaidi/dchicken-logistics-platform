@@ -29,7 +29,7 @@ import { useTripRestaurants } from '@/hooks/useTrips'
 import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
 import { useDirectOrders, useCreateDirectOrder, useUpdateDirectOrder, useDeleteDirectOrder } from '@/hooks/useDirectOrders'
 import { useRestaurants } from '@/hooks/useRestaurants'
-import { useCreateInvoice } from '@/hooks/useInventory'
+import { useCreateInvoice, useInvoices } from '@/hooks/useInventory'
 import { supabase } from '@/lib/supabase'
 import { clearDriverSession } from '@/hooks/useDrivers'
 import { InvoicePreview, computeTaxFields } from '@/components/InvoicePreview'
@@ -61,7 +61,7 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react'
-import { useCallback, useState, useRef, useEffect, type ChangeEvent } from 'react'
+import { useCallback, useState, useRef, useEffect, useMemo, type ChangeEvent } from 'react'
 
 type StopStatus = 'قيد الانتظار' | 'تم التسليم' | 'ملغي'
 
@@ -946,6 +946,7 @@ function DriverDashboard() {
   const [directOrderOpen, setDirectOrderOpen] = useState(false)
   const [editingOrder, setEditingOrder] = useState<DirectOrder | null>(null)
   const [editInvoiceData, setEditInvoiceData] = useState<InvoiceData | null>(null)
+  const [viewInvoiceData, setViewInvoiceData] = useState<InvoiceData | null>(null)
   const updateOrder = useUpdateDirectOrder()
   const deleteOrder = useDeleteDirectOrder()
 
@@ -962,6 +963,15 @@ function DriverDashboard() {
   const { data: trip, isLoading: tripLoading } = useDriverTrip(effectiveDriverId)
   const { data: stops = [] } = useTripRestaurants(trip?.id ?? '')
   const { data: allDirectOrders = [] } = useDirectOrders(effectiveDriverId)
+  const { data: allInvoices = [] } = useInvoices()
+
+  const invoiceByOrderId = useMemo(() => {
+    const map = new Map<string, typeof allInvoices[0]>()
+    for (const inv of allInvoices) {
+      if (inv.orderId && !map.has(inv.orderId)) map.set(inv.orderId, inv)
+    }
+    return map
+  }, [allInvoices])
 
   const ONE_DAY_MS = 24 * 60 * 60 * 1000
   const now = Date.now()
@@ -1187,6 +1197,34 @@ function DriverDashboard() {
                           </Button>
                         </div>
                       )}
+                      {!canModify && (() => {
+                        const inv = invoiceByOrderId.get(order.id)
+                        if (!inv) return null
+                        return (
+                          <div className="pr-10">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5"
+                              onClick={() => setViewInvoiceData({
+                                invoiceNumber: inv.invoiceNumber,
+                                date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
+                                restaurantName: inv.restaurantName,
+                                restaurantTaxNumber: inv.restaurantTaxNumber,
+                                driverName: inv.driverName,
+                                quantityKg: inv.quantityKg,
+                                pricePerKg: inv.pricePerKg,
+                                paymentMethod: inv.paymentMethod,
+                                paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                                chickenType: inv.chickenType,
+                              })}
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              الفاتورة
+                            </Button>
+                          </div>
+                        )
+                      })()}
                     </div>
                   )
                 })}
@@ -1232,6 +1270,14 @@ function DriverDashboard() {
         <InvoicePreview
           data={editInvoiceData}
           onClose={() => setEditInvoiceData(null)}
+        />
+      )}
+
+      {/* View Invoice Preview */}
+      {viewInvoiceData && (
+        <InvoicePreview
+          data={viewInvoiceData}
+          onClose={() => setViewInvoiceData(null)}
         />
       )}
 

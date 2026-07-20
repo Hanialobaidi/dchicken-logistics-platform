@@ -684,6 +684,8 @@ function EditOrderDialog({
   open,
   onOpenChange,
   order,
+  driverId,
+  driverName,
   onSaved,
 }: {
   open: boolean
@@ -691,17 +693,22 @@ function EditOrderDialog({
   order: {
     id: string
     restaurantName: string
+    restaurantTaxNumber: string
+    orderDate: string
     actualWeight: number
     pricePerKg: number
     totalPrice: number
     paymentMethod: string
+    paymentStatus: string
     chickenType: string
     notes: string | null
   } | null
+  driverId: string
+  driverName: string
   onSaved: () => void
 }) {
   const updateOrder = useUpdateDirectOrder()
-  const { data: restaurants = [] } = useRestaurants()
+  const createInvoice = useCreateInvoice()
 
   const [actualWeight, setActualWeight] = useState('')
   const [pricePerKg, setPricePerKg] = useState('')
@@ -709,6 +716,7 @@ function EditOrderDialog({
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
   const [notes, setNotes] = useState('')
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null)
 
   useEffect(() => {
     if (order && open) {
@@ -724,6 +732,7 @@ function EditOrderDialog({
   const weightNum = Number(actualWeight) || 0
   const priceNum = Number(pricePerKg) || 0
   const totalPrice = weightNum * priceNum
+  const taxFields = weightNum > 0 && priceNum > 0 ? computeTaxFields(weightNum, priceNum) : null
 
   const handleSubmit = async () => {
     if (!order || !actualWeight.trim() || !pricePerKg) return
@@ -743,9 +752,63 @@ function EditOrderDialog({
     onOpenChange(false)
   }
 
+  const handleIssueInvoice = async () => {
+    if (!order || !actualWeight.trim() || !pricePerKg) return
+    const effectiveChickenType = chickenType === 'أخرى' ? customChickenType.trim() : chickenType
+
+    await updateOrder.mutateAsync({
+      id: order.id,
+      actualWeight: weightNum,
+      pricePerKg: priceNum,
+      totalPrice,
+      paymentMethod,
+      chickenType: effectiveChickenType,
+      notes: notes.trim() || null,
+    })
+
+    const invoiceNum = `INV-${Date.now().toString(36).toUpperCase()}`
+    await createInvoice.mutateAsync({
+      invoiceNumber: invoiceNum,
+      orderId: order.id,
+      orderType: 'direct_order',
+      restaurantName: order.restaurantName,
+      restaurantTaxNumber: order.restaurantTaxNumber,
+      driverName,
+      driverId,
+      itemDescription: effectiveChickenType,
+      quantityKg: weightNum,
+      pricePerKg: priceNum,
+      subtotalBeforeTax: taxFields?.subtotalBeforeTax ?? 0,
+      vatAmount: taxFields?.vatAmount ?? 0,
+      totalAmount: totalPrice,
+      paymentMethod,
+      invoiceDate: order.orderDate,
+      pdfUrl: undefined,
+      paymentStatus: order.paymentStatus,
+    })
+
+    setInvoiceData({
+      invoiceNumber: invoiceNum,
+      date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
+      restaurantName: order.restaurantName,
+      restaurantTaxNumber: order.restaurantTaxNumber,
+      driverName,
+      quantityKg: weightNum,
+      pricePerKg: priceNum,
+      paymentMethod,
+      paymentStatus: order.paymentStatus as 'paid' | 'unpaid',
+      chickenType: effectiveChickenType,
+    })
+
+    toast.success('تم تعديل الطلبية وإصدار الفاتورة')
+    onSaved()
+    onOpenChange(false)
+  }
+
   if (!order) return null
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md gap-0 p-0 overflow-hidden" dir="rtl">
         <div className="border-b px-6 py-4">
@@ -851,16 +914,33 @@ function EditOrderDialog({
             إلغاء
           </Button>
           <Button
+            variant="outline"
             onClick={handleSubmit}
             disabled={updateOrder.isPending || !actualWeight.trim() || !pricePerKg}
             className="flex-1 gap-2"
           >
             {updateOrder.isPending && <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />}
-            حفظ التعديلات
+            حفظ فقط
+          </Button>
+          <Button
+            onClick={handleIssueInvoice}
+            disabled={updateOrder.isPending || createInvoice.isPending || !actualWeight.trim() || !pricePerKg}
+            className="flex-1 gap-2"
+          >
+            {(updateOrder.isPending || createInvoice.isPending) && <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />}
+            تعديل وإصدار فاتورة
           </Button>
         </div>
       </DialogContent>
     </Dialog>
+
+    {invoiceData && (
+      <InvoicePreview
+        data={invoiceData}
+        onClose={() => setInvoiceData(null)}
+      />
+    )}
+    </>
   )
 }
 
@@ -1147,6 +1227,8 @@ function DriverDashboard() {
         open={!!editingOrder}
         onOpenChange={(o) => { if (!o) setEditingOrder(null) }}
         order={editingOrder}
+        driverId={effectiveDriverId}
+        driverName={effectiveDriverName}
         onSaved={() => setEditingOrder(null)}
       />
 

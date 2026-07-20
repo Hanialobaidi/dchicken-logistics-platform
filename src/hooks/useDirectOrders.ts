@@ -40,3 +40,13 @@ export function useCreateDirectOrder() {
     },
   })
 }
+
+export function useDeleteDirectOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => directOrdersTable.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['directOrders'] })
+    },
+  })
+}

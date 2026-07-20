@@ -27,7 +27,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useDriverTrip } from '@/hooks/useDriverTrip'
 import { useTripRestaurants } from '@/hooks/useTrips'
 import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
-import { useDirectOrders, useCreateDirectOrder } from '@/hooks/useDirectOrders'
+import { useDirectOrders, useCreateDirectOrder, useUpdateDirectOrder, useDeleteDirectOrder } from '@/hooks/useDirectOrders'
 import { useRestaurants } from '@/hooks/useRestaurants'
 import { useCreateInvoice } from '@/hooks/useInventory'
 import { supabase } from '@/lib/supabase'
@@ -36,6 +36,7 @@ import { InvoicePreview, computeTaxFields } from '@/components/InvoicePreview'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import type { InvoiceData } from '@/components/InvoicePreview'
 import { CHICKEN_TYPES } from '@/types'
+import type { DirectOrder } from '@/types'
 import {
   Truck,
   Store,
@@ -57,6 +58,8 @@ import {
   CheckCircle,
   ArrowRight,
   ArrowUp,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { useCallback, useState, useRef, useEffect, type ChangeEvent } from 'react'
 
@@ -676,6 +679,191 @@ function DirectOrderDialog({
   )
 }
 
+/* ──── Edit Order Dialog ──── */
+function EditOrderDialog({
+  open,
+  onOpenChange,
+  order,
+  onSaved,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  order: {
+    id: string
+    restaurantName: string
+    actualWeight: number
+    pricePerKg: number
+    totalPrice: number
+    paymentMethod: string
+    chickenType: string
+    notes: string | null
+  } | null
+  onSaved: () => void
+}) {
+  const updateOrder = useUpdateDirectOrder()
+  const { data: restaurants = [] } = useRestaurants()
+
+  const [actualWeight, setActualWeight] = useState('')
+  const [pricePerKg, setPricePerKg] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
+  const [customChickenType, setCustomChickenType] = useState('')
+  const [notes, setNotes] = useState('')
+
+  useEffect(() => {
+    if (order && open) {
+      setActualWeight(String(order.actualWeight || ''))
+      setPricePerKg(String(order.pricePerKg || ''))
+      setPaymentMethod(order.paymentMethod || 'cash')
+      setChickenType(order.chickenType === 'أخرى' ? 'أخرى' : (order.chickenType || CHICKEN_TYPES[0]))
+      setCustomChickenType(order.chickenType !== 'أخرى' ? '' : order.chickenType)
+      setNotes(order.notes || '')
+    }
+  }, [order, open])
+
+  const weightNum = Number(actualWeight) || 0
+  const priceNum = Number(pricePerKg) || 0
+  const totalPrice = weightNum * priceNum
+
+  const handleSubmit = async () => {
+    if (!order || !actualWeight.trim() || !pricePerKg) return
+    const effectiveChickenType = chickenType === 'أخرى' ? customChickenType.trim() : chickenType
+
+    await updateOrder.mutateAsync({
+      id: order.id,
+      actualWeight: weightNum,
+      pricePerKg: priceNum,
+      totalPrice,
+      paymentMethod,
+      chickenType: effectiveChickenType,
+      notes: notes.trim() || null,
+    })
+    toast.success('تم تعديل الطلبية')
+    onSaved()
+    onOpenChange(false)
+  }
+
+  if (!order) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md gap-0 p-0 overflow-hidden" dir="rtl">
+        <div className="border-b px-6 py-4">
+          <DialogTitle className="text-sm font-semibold">تعديل الطلبية</DialogTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">{order.restaurantName}</p>
+        </div>
+        <div className="overflow-y-auto max-h-[70vh] px-6 py-4 space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm">نوع الدجاج</Label>
+            <Select value={chickenType} onValueChange={setChickenType}>
+              <SelectTrigger className="h-11 text-right w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {CHICKEN_TYPES.map((ct) => (
+                  <SelectItem key={ct} value={ct}>{ct}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {chickenType === 'أخرى' && (
+              <Input
+                placeholder="اكتب نوع الدجاج..."
+                value={customChickenType}
+                onChange={(e) => setCustomChickenType(e.target.value)}
+                className="text-right h-11"
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm">الكمية (كجم)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                value={actualWeight}
+                onChange={(e) => setActualWeight(e.target.value)}
+                className="text-right h-11"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">سعر الكيلو (ريال)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={pricePerKg}
+                onChange={(e) => setPricePerKg(e.target.value)}
+                className="text-right h-11"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm">طريقة الدفع</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {PAYMENT_METHODS.map((pm) => {
+                const Icon = pm.icon
+                return (
+                  <button
+                    key={pm.value}
+                    type="button"
+                    onClick={() => setPaymentMethod(pm.value)}
+                    className={cn(
+                      'flex flex-col items-center gap-1 rounded-lg border-2 p-3 transition-all cursor-pointer',
+                      paymentMethod === pm.value
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-muted bg-muted/30 text-muted-foreground'
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="text-xs font-medium">{pm.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          {weightNum > 0 && priceNum > 0 && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <div className="flex justify-between text-base font-bold">
+                <span>الإجمالي</span>
+                <span>{totalPrice.toFixed(2)} ر.س</span>
+              </div>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label className="text-sm">ملاحظات <span className="text-muted-foreground text-xs">(اختياري)</span></Label>
+            <Textarea
+              placeholder="أي ملاحظات إضافية..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="text-right min-h-[60px]"
+              rows={2}
+            />
+          </div>
+        </div>
+        <div className="border-t px-6 py-3 flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={updateOrder.isPending}
+            className="flex-1"
+          >
+            إلغاء
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={updateOrder.isPending || !actualWeight.trim() || !pricePerKg}
+            className="flex-1 gap-2"
+          >
+            {updateOrder.isPending && <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />}
+            حفظ التعديلات
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 /* ──── DriverDashboard ──── */
 function DriverDashboard() {
   const { role } = useAuth()
@@ -683,6 +871,9 @@ function DriverDashboard() {
 
   const [selectedDriverId, setSelectedDriverId] = useState('')
   const [directOrderOpen, setDirectOrderOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<DirectOrder | null>(null)
+  const updateOrder = useUpdateDirectOrder()
+  const deleteOrder = useDeleteDirectOrder()
 
   const syncSession = typeof window !== 'undefined' ? getDriverSession() : null
 
@@ -853,6 +1044,7 @@ function DriverDashboard() {
               {directOrders.map((order, i) => {
                   const cfg = DIRECT_ORDER_STATUS_CONFIG[order.status] ?? DIRECT_ORDER_STATUS_CONFIG.pending
                   const paymentLabel = PAYMENT_METHODS.find((p) => p.value === order.paymentMethod)?.label ?? order.paymentMethod
+                  const canModify = order.status === 'pending'
                   return (
                     <div
                       key={order.id}
@@ -894,6 +1086,33 @@ function DriverDashboard() {
                       {order.notes && (
                         <p className="text-xs text-muted-foreground pr-10">{order.notes}</p>
                       )}
+                      {canModify && (
+                        <div className="flex gap-2 pr-10">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() => setEditingOrder(order)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            تعديل
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="gap-1.5"
+                            disabled={deleteOrder.isPending}
+                            onClick={async () => {
+                              if (!confirm('هل أنت متأكد من إلغاء هذه الطلبية؟')) return
+                              await deleteOrder.mutateAsync(order.id)
+                              toast.success('تم إلغاء الطلبية')
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            إلغاء
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -921,6 +1140,14 @@ function DriverDashboard() {
         driverId={effectiveDriverId}
         driverName={effectiveDriverName}
         userId={effectiveDriverId}
+      />
+
+      {/* Edit Order Dialog */}
+      <EditOrderDialog
+        open={!!editingOrder}
+        onOpenChange={(o) => { if (!o) setEditingOrder(null) }}
+        order={editingOrder}
+        onSaved={() => setEditingOrder(null)}
       />
 
       <ScrollToTop />

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +25,6 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useDriverTrip } from '@/hooks/useDriverTrip'
-import { useTripRestaurants } from '@/hooks/useTrips'
 import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
 import { useDirectOrders, useCreateDirectOrder, useUpdateDirectOrder, useDeleteDirectOrder } from '@/hooks/useDirectOrders'
 import { useRestaurants } from '@/hooks/useRestaurants'
@@ -965,7 +964,7 @@ function DriverDashboard() {
     : (syncSession?.driverName ?? 'السائق')
 
   const { data: trip, isLoading: tripLoading } = useDriverTrip(effectiveDriverId)
-  const { data: stops = [] } = useTripRestaurants(trip?.id ?? '')
+  const stops = trip?.restaurants ?? []
   const { data: allDirectOrders = [] } = useDirectOrders(effectiveDriverId)
   const { data: allInvoices = [] } = useInvoices()
 
@@ -1299,11 +1298,7 @@ export const Route = createFileRoute('/driver')({
       { name: 'description', content: 'لوحة تحكم السائق لتطبيق DChicken لإدارة عمليات التوصيل' },
     ],
   }),
-  component: () => (
-    <BlinkClientBoundary fallback={<DriverSkeleton />}>
-      <DriverDashboard />
-    </BlinkClientBoundary>
-  ),
+  component: () => <DriverDashboard />,
 })
 
 /* ──── Skeleton ──── */

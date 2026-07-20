@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
+
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,11 +30,7 @@ import type { Restaurant } from '@/types'
 export const Route = createFileRoute('/app/restaurants')({
   ssr: false,
   head: () => ({ meta: [{ title: 'المطاعم · DChicken' }] }),
-  component: () => (
-    <BlinkClientBoundary fallback={<RestaurantsSkeleton />}>
-      <RestaurantsPage />
-    </BlinkClientBoundary>
-  ),
+  component: () => <RestaurantsPage />,
 })
 
 function RestaurantsPage() {

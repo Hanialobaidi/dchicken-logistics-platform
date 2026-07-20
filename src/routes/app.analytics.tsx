@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { usePurchases } from '@/hooks/usePurchases'
@@ -44,11 +44,7 @@ const PIE_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4
 export const Route = createFileRoute('/app/analytics')({
   ssr: false,
   head: () => ({ meta: [{ title: 'التحليلات · DChicken' }] }),
-  component: () => (
-    <BlinkClientBoundary fallback={<AnalyticsSkeleton />}>
-      <AnalyticsPage />
-    </BlinkClientBoundary>
-  ),
+  component: () => <AnalyticsPage />,
 })
 
 function AnalyticsPage() {

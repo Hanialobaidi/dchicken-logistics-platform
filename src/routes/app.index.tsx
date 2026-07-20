@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRestaurants } from '@/hooks/useRestaurants'
 import { useInventory } from '@/hooks/useInventory'
-import { useAllDirectOrders, useUpdateDirectOrder } from '@/hooks/useDirectOrders'
+import { useUpdateDirectOrder } from '@/hooks/useDirectOrders'
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders'
 import { toast } from 'sonner'
 import {
@@ -33,20 +32,16 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000
 export const Route = createFileRoute('/app/')({
   ssr: false,
   head: () => ({ meta: [{ title: 'الرئيسية · DChicken' }] }),
-  component: () => (
-    <BlinkClientBoundary fallback={<DashboardSkeleton />}>
-      <DashboardHome />
-    </BlinkClientBoundary>
-  ),
+  component: () => <DashboardHome />,
 })
 
 function DashboardHome() {
   const { data: restaurants = [] } = useRestaurants()
   const inventory = useInventory()
-  const { data: allDirectOrders = [] } = useAllDirectOrders()
   const updateDirectOrder = useUpdateDirectOrder()
   useRealtimeOrders(true)
 
+  const allDirectOrders = inventory.allDirectOrders ?? []
   const restaurantCount = restaurants.length
   const pendingOrders = allDirectOrders.filter((o) => o.status === 'pending')
   const inventoryIsLow = inventory.availableKg < 100 && inventory.totalPurchasedKg > 0

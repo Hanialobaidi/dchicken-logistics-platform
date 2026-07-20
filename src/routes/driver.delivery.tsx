@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
+
 import {
   Dialog,
   DialogContent,
@@ -237,11 +237,7 @@ export const Route = createFileRoute('/driver/delivery')({
       { name: 'description', content: 'تأكيد تسليم طلبية لمطعم' },
     ],
   }),
-  component: () => (
-    <BlinkClientBoundary fallback={null}>
-      <DeliveryDialog />
-    </BlinkClientBoundary>
-  ),
+  component: () => <DeliveryDialog />,
 })
 
 

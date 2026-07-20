@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,11 +57,7 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat('ar-SA', {
 export const Route = createFileRoute('/app/purchases')({
   ssr: false,
   head: () => ({ meta: [{ title: 'المشتريات · DChicken' }] }),
-  component: () => (
-    <BlinkClientBoundary fallback={<PurchasesSkeleton />}>
-      <PurchasesPage />
-    </BlinkClientBoundary>
-  ),
+  component: () => <PurchasesPage />,
 })
 
 function PurchasesPage() {

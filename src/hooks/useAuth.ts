@@ -12,12 +12,24 @@ interface AuthState {
 }
 
 export function useAuth(): AuthState {
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<{ id: string; email: string } | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('sb-') && key.endsWith('-auth-token')) {
+          const parsed = JSON.parse(localStorage.getItem(key) ?? '{}')
+          const u = parsed?.user ?? parsed?.current_session?.user
+          if (u?.id) return { id: u.id, email: u.email ?? '' }
+        }
+      }
+    } catch { /* ignore */ }
+    return null
+  })
+  const [isLoading, setIsLoading] = useState(() => !user)
   const [driverSession, setDriverSession] = useState<DriverSession | null>(null)
 
   useEffect(() => {
-    // Check for driver session first
     const ds = getDriverSession()
     if (ds) {
       setDriverSession(ds)
@@ -25,7 +37,6 @@ export function useAuth(): AuthState {
       return
     }
 
-    // Check Supabase auth session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser({
@@ -36,7 +47,6 @@ export function useAuth(): AuthState {
       setIsLoading(false)
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser({

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
+
 import { Shell } from '@/Shell'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -275,9 +275,5 @@ function AdminSkeleton() {
 
 export const Route = createFileRoute('/app')({
   ssr: false,
-  component: () => (
-    <BlinkClientBoundary fallback={<AdminSkeleton />}>
-      <AdminLayout />
-    </BlinkClientBoundary>
-  ),
+  component: () => <AdminLayout />,
 })

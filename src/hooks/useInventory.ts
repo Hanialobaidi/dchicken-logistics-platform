@@ -45,6 +45,7 @@ export function useInventory() {
 
   return {
     ...purchases,
+    allDirectOrders: directOrders.data ?? [],
     totalPurchasedKg,
     totalSoldKg,
     totalSoldFromDirectOrders,

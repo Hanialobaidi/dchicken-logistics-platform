@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BlinkClientBoundary } from '@/components/BlinkClientBoundary'
+
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,11 +29,7 @@ import type { Driver } from '@/types'
 export const Route = createFileRoute('/app/drivers')({
   ssr: false,
   head: () => ({ meta: [{ title: 'السائقين · DChicken' }] }),
-  component: () => (
-    <BlinkClientBoundary fallback={<DriversSkeleton />}>
-      <DriversPage />
-    </BlinkClientBoundary>
-  ),
+  component: () => <DriversPage />,
 })
 
 function DriversPage() {

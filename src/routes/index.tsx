@@ -81,167 +81,177 @@ function LandingPage() {
         <Card>
           <CardContent className="p-6 space-y-3">
             {/* Admin login */}
-            {!showAdminLogin ? (
+            <div className="relative">
               <Button
                 size="lg"
-                className="w-full min-h-[52px] gap-3 text-base font-medium"
+                className={`w-full min-h-[52px] gap-3 text-base font-medium transition-opacity ${showAdminLogin ? 'absolute inset-0 opacity-0 pointer-events-none' : ''}`}
                 onClick={() => setShowAdminLogin(true)}
               >
                 <LayoutDashboard className="h-5 w-5" />
                 لوحة التحكم (مدير)
               </Button>
-            ) : (
-              <div className="space-y-3 border rounded-lg p-4 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold flex items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4 text-primary" />
-                    تسجيل دخول المدير
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowAdminLogin(false)
-                      setAdminEmail('')
-                      setAdminPassword('')
-                    }}
-                    className="text-xs h-7"
-                  >
-                    إلغاء
-                  </Button>
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${showAdminLogin ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+              >
+                <div className="overflow-hidden">
+                  <div className="space-y-3 border rounded-lg p-4 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold flex items-center gap-2">
+                        <LayoutDashboard className="h-4 w-4 text-primary" />
+                        تسجيل دخول المدير
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowAdminLogin(false)
+                          setAdminEmail('')
+                          setAdminPassword('')
+                        }}
+                        className="text-xs h-7"
+                      >
+                        إلغاء
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-email" className="text-xs flex items-center gap-1.5">
+                        <Mail className="h-3 w-3" />
+                        البريد الإلكتروني
+                      </Label>
+                      <Input
+                        id="admin-email"
+                        type="email"
+                        placeholder="admin@example.com"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        className="text-left h-11"
+                        dir="ltr"
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAdminLogin() }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-password" className="text-xs flex items-center gap-1.5">
+                        <Key className="h-3 w-3" />
+                        كلمة المرور
+                      </Label>
+                      <Input
+                        id="admin-password"
+                        type="password"
+                        placeholder="أدخل كلمة المرور"
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        className="text-right h-11"
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAdminLogin() }}
+                      />
+                    </div>
+                    <Button
+                      size="lg"
+                      className="w-full min-h-[48px] gap-2 text-sm font-medium"
+                      onClick={handleAdminLogin}
+                      disabled={adminLoading || !adminEmail.trim() || !adminPassword.trim()}
+                    >
+                      {adminLoading ? (
+                        <>
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                          جاري التحقق...
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="h-4 w-4" />
+                          تسجيل الدخول
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email" className="text-xs flex items-center gap-1.5">
-                    <Mail className="h-3 w-3" />
-                    البريد الإلكتروني
-                  </Label>
-                  <Input
-                    id="admin-email"
-                    type="email"
-                    placeholder="admin@example.com"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    className="text-left h-11"
-                    dir="ltr"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAdminLogin() }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-password" className="text-xs flex items-center gap-1.5">
-                    <Key className="h-3 w-3" />
-                    كلمة المرور
-                  </Label>
-                  <Input
-                    id="admin-password"
-                    type="password"
-                    placeholder="أدخل كلمة المرور"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="text-right h-11"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAdminLogin() }}
-                  />
-                </div>
-                <Button
-                  size="lg"
-                  className="w-full min-h-[48px] gap-2 text-sm font-medium"
-                  onClick={handleAdminLogin}
-                  disabled={adminLoading || !adminEmail.trim() || !adminPassword.trim()}
-                >
-                  {adminLoading ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                      جاري التحقق...
-                    </>
-                  ) : (
-                    <>
-                      <LogIn className="h-4 w-4" />
-                      تسجيل الدخول
-                    </>
-                  )}
-                </Button>
               </div>
-            )}
+            </div>
 
             {/* Driver login toggle */}
-            {!showDriverLogin ? (
+            <div className="relative">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full min-h-[52px] gap-3 text-base"
+                className={`w-full min-h-[52px] gap-3 text-base transition-opacity ${showDriverLogin ? 'absolute inset-0 opacity-0 pointer-events-none' : ''}`}
                 onClick={() => setShowDriverLogin(true)}
               >
                 <Truck className="h-5 w-5" />
                 واجهة السائق
               </Button>
-            ) : (
-              <div className="space-y-3 border rounded-lg p-4 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-primary" />
-                    تسجيل دخول السائق
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowDriverLogin(false)
-                      setDriverUsername('')
-                      setDriverPassword('')
-                    }}
-                    className="text-xs h-7"
-                  >
-                    إلغاء
-                  </Button>
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${showDriverLogin ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+              >
+                <div className="overflow-hidden">
+                  <div className="space-y-3 border rounded-lg p-4 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-primary" />
+                        تسجيل دخول السائق
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowDriverLogin(false)
+                          setDriverUsername('')
+                          setDriverPassword('')
+                        }}
+                        className="text-xs h-7"
+                      >
+                        إلغاء
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="login-username" className="text-xs flex items-center gap-1.5">
+                        <User className="h-3 w-3" />
+                        اسم المستخدم
+                      </Label>
+                      <Input
+                        id="login-username"
+                        placeholder="أدخل اسم المستخدم"
+                        value={driverUsername}
+                        onChange={(e) => setDriverUsername(e.target.value)}
+                        className="text-right h-11"
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleDriverLogin() }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="login-password" className="text-xs flex items-center gap-1.5">
+                        <Key className="h-3 w-3" />
+                        كلمة المرور
+                      </Label>
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="أدخل كلمة المرور"
+                        value={driverPassword}
+                        onChange={(e) => setDriverPassword(e.target.value)}
+                        className="text-right h-11"
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleDriverLogin() }}
+                      />
+                    </div>
+                    <Button
+                      size="lg"
+                      className="w-full min-h-[48px] gap-2 text-sm font-medium"
+                      onClick={handleDriverLogin}
+                      disabled={driverLogin.isPending || !driverUsername.trim() || !driverPassword.trim()}
+                    >
+                      {driverLogin.isPending ? (
+                        <>
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                          جاري التحقق...
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="h-4 w-4" />
+                          تسجيل الدخول
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-username" className="text-xs flex items-center gap-1.5">
-                    <User className="h-3 w-3" />
-                    اسم المستخدم
-                  </Label>
-                  <Input
-                    id="login-username"
-                    placeholder="أدخل اسم المستخدم"
-                    value={driverUsername}
-                    onChange={(e) => setDriverUsername(e.target.value)}
-                    className="text-right h-11"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleDriverLogin() }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password" className="text-xs flex items-center gap-1.5">
-                    <Key className="h-3 w-3" />
-                    كلمة المرور
-                  </Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="أدخل كلمة المرور"
-                    value={driverPassword}
-                    onChange={(e) => setDriverPassword(e.target.value)}
-                    className="text-right h-11"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleDriverLogin() }}
-                  />
-                </div>
-                <Button
-                  size="lg"
-                  className="w-full min-h-[48px] gap-2 text-sm font-medium"
-                  onClick={handleDriverLogin}
-                  disabled={driverLogin.isPending || !driverUsername.trim() || !driverPassword.trim()}
-                >
-                  {driverLogin.isPending ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                      جاري التحقق...
-                    </>
-                  ) : (
-                    <>
-                      <LogIn className="h-4 w-4" />
-                      تسجيل الدخول
-                    </>
-                  )}
-                </Button>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 

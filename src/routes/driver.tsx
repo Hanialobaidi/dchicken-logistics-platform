@@ -1197,7 +1197,7 @@ function DriverDashboard() {
                           </Button>
                         </div>
                       )}
-                      {!canModify && (() => {
+                      {(() => {
                         const inv = invoiceByOrderId.get(order.id)
                         if (!inv) return null
                         return (

@@ -11,7 +11,6 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import type { ReactNode } from 'react'
 import indexCss from '../index.css?url'
-import { OneSignalInit } from '@/components/OneSignalInit'
 
 /**
  * Pre-paint theme script. Runs synchronously in <head> BEFORE first paint, so
@@ -102,12 +101,19 @@ function RootDocument({ children }: { children: ReactNode }) {
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           defer
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.OneSignalDeferred = window.OneSignalDeferred || [];
+window.OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.init({ appId: '7fea93f9-59a6-4c94-8b82-1ae65d133ff6' });
+});`,
+          }}
+        />
       </head>
       <body>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider delayDuration={0}>
             <Toaster />
-            <OneSignalInit />
             {/*
               Full-bleed by default — NO app chrome. Child routes render directly.
               SaaS / dashboard app? Opt in by adding a `src/routes/_app.tsx` layout

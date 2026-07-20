@@ -41,11 +41,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await response.json()
 
-    if (!response.ok) {
-      return res.status(response.status).json(data)
-    }
-
-    return res.status(200).json({ success: true, id: data.id })
+    return res.status(response.status).json({
+      ok: response.ok,
+      status: response.status,
+      id: data.id,
+      errors: data.errors ?? null,
+      recipients: data.recipients ?? null,
+      web_http_status: data.web?.http_status ?? null,
+    })
   } catch (err) {
     return res.status(500).json({ error: 'Failed to send notification' })
   }

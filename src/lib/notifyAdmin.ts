@@ -6,7 +6,7 @@ export async function notifyAdminNewOrder(payload: {
   weight: number
 }) {
   try {
-    await fetch(`${API_BASE}/api/send-notification`, {
+    const res = await fetch(`${API_BASE}/api/send-notification`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -14,7 +14,9 @@ export async function notifyAdminNewOrder(payload: {
         body: `${payload.driverName} — ${payload.restaurantName} · ${payload.weight} كجم`,
       }),
     })
-  } catch {
-    // Best-effort — don't block order creation if push fails
+    const data = await res.json()
+    console.log('[OneSignal Push]', res.status, data)
+  } catch (e) {
+    console.error('[OneSignal Push] failed:', e)
   }
 }

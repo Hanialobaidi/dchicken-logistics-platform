@@ -7,6 +7,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
+import { Analytics } from '@vercel/analytics/react'
 import type { ReactNode } from 'react'
 import indexCss from '../index.css?url'
 
@@ -109,6 +110,7 @@ function RootDocument({ children }: { children: ReactNode }) {
             {children}
           </TooltipProvider>
         </QueryClientProvider>
+        <Analytics />
         <Scripts />
       </body>
     </html>

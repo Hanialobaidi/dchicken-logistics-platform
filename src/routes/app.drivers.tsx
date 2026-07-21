@@ -23,8 +23,9 @@ import {
 import { toast } from 'sonner'
 import { useDrivers, useCreateDriver, useUpdateDriver, useDeleteDriver } from '@/hooks/useDrivers'
 import { Users, Plus, Trash2, Pencil, Phone, Car, Key, User } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Driver } from '@/types'
+import { SearchInput } from '@/components/SearchInput'
 
 export const Route = createFileRoute('/app/drivers')({
   ssr: false,
@@ -46,6 +47,17 @@ function DriversPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filteredDrivers = useMemo(() => {
+    if (!search.trim()) return drivers
+    const q = search.trim().toLowerCase()
+    return drivers.filter((d: Driver) =>
+      d.name?.toLowerCase().includes(q) ||
+      d.username?.toLowerCase().includes(q) ||
+      d.phone?.toLowerCase().includes(q)
+    )
+  }, [drivers, search])
 
   const openCreate = () => {
     setEditingDriver(null)
@@ -142,6 +154,13 @@ function DriversPage() {
         </Button>
       </div>
 
+      {/* Search */}
+      {drivers.length > 0 && (
+        <div className="max-w-sm">
+          <SearchInput value={search} onChange={setSearch} placeholder="بحث بالاسم، المستخدم، أو الجوال..." />
+        </div>
+      )}
+
       {/* Drivers table */}
       <Card>
         <CardContent className="p-0">
@@ -165,6 +184,10 @@ function DriversPage() {
                 إضافة سائق
               </Button>
             </div>
+          ) : filteredDrivers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <p className="text-sm text-muted-foreground">لا توجد نتائج لـ "{search}"</p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -177,7 +200,7 @@ function DriversPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {drivers.map((d: Driver) => (
+                {filteredDrivers.map((d: Driver) => (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium">{d.name}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">

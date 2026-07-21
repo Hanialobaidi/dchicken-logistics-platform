@@ -24,8 +24,9 @@ import {
 import { toast } from 'sonner'
 import { useRestaurants, useCreateRestaurant, useDeleteRestaurant } from '@/hooks/useRestaurants'
 import { Store, Plus, Trash2, MapPin, Phone, Hash, AlertTriangle } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Restaurant } from '@/types'
+import { SearchInput } from '@/components/SearchInput'
 
 export const Route = createFileRoute('/app/restaurants')({
   ssr: false,
@@ -44,6 +45,17 @@ function RestaurantsPage() {
   const [phone, setPhone] = useState('')
   const [taxNumber, setTaxNumber] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filteredRestaurants = useMemo(() => {
+    if (!search.trim()) return restaurants
+    const q = search.trim().toLowerCase()
+    return restaurants.filter((r: Restaurant) =>
+      r.name?.toLowerCase().includes(q) ||
+      r.taxNumber?.toLowerCase().includes(q) ||
+      r.phone?.toLowerCase().includes(q)
+    )
+  }, [restaurants, search])
 
   const handleCreate = async () => {
     if (!name.trim()) return
@@ -113,6 +125,13 @@ function RestaurantsPage() {
         </Button>
       </div>
 
+      {/* Search */}
+      {restaurants.length > 0 && (
+        <div className="max-w-sm">
+          <SearchInput value={search} onChange={setSearch} placeholder="بحث بالاسم، الضريبي، أو الهاتف..." />
+        </div>
+      )}
+
       {/* Restaurant table */}
       <Card>
         <CardContent className="p-0">
@@ -136,6 +155,10 @@ function RestaurantsPage() {
                 إضافة مطعم
               </Button>
             </div>
+          ) : filteredRestaurants.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <p className="text-sm text-muted-foreground">لا توجد نتائج لـ "{search}"</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -149,7 +172,7 @@ function RestaurantsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {restaurants.map((r: Restaurant) => (
+                  {filteredRestaurants.map((r: Restaurant) => (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.name}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">

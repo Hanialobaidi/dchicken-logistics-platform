@@ -37,7 +37,7 @@ import {
   ArrowUpCircle,
   Warehouse,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Select,
   SelectContent,
@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/select'
 import { CHICKEN_TYPES } from '@/types'
 import type { Purchase } from '@/types'
+import { SearchInput } from '@/components/SearchInput'
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat('ar-SA', {
   style: 'currency',
@@ -75,6 +76,27 @@ function PurchasesPage() {
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+
+  const filteredPurchases = useMemo(() => {
+    let result = purchases
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter((p: Purchase) =>
+        p.farmName?.toLowerCase().includes(q) ||
+        p.chickenType?.toLowerCase().includes(q)
+      )
+    }
+    if (dateFrom) {
+      result = result.filter((p: Purchase) => p.purchaseDate >= dateFrom)
+    }
+    if (dateTo) {
+      result = result.filter((p: Purchase) => p.purchaseDate <= dateTo)
+    }
+    return result
+  }, [purchases, search, dateFrom, dateTo])
 
   const quantity = Number(quantityKg) || 0
   const price = Number(pricePerKg) || 0
@@ -219,6 +241,30 @@ function PurchasesPage() {
         </Card>
       )}
 
+      {/* Search & Filters */}
+      {purchases.length > 0 && (
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="max-w-xs flex-1">
+            <SearchInput value={search} onChange={setSearch} placeholder="بحث باسم المزرعة أو النوع..." />
+          </div>
+          <div className="flex gap-2">
+            <div>
+              <Label className="text-xs mb-1 block">من تاريخ</Label>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-10 w-[150px]" />
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">إلى تاريخ</Label>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-10 w-[150px]" />
+            </div>
+            {(search || dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" className="h-10" onClick={() => { setSearch(''); setDateFrom(''); setDateTo('') }}>
+                مسح الفلتر
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Purchases table */}
       <Card>
         <CardContent className="p-0">
@@ -242,6 +288,10 @@ function PurchasesPage() {
                 إضافة عملية شراء
               </Button>
             </div>
+          ) : filteredPurchases.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <p className="text-sm text-muted-foreground">لا توجد نتائج</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -257,7 +307,7 @@ function PurchasesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {purchases.map((p: Purchase) => (
+                  {filteredPurchases.map((p: Purchase) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium text-sm">
                         <span className="flex items-center gap-1.5">

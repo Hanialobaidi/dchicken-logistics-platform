@@ -95,7 +95,8 @@ function AdminSidebar() {
     const { oneSignalOptOut } = await import('@/lib/onesignal')
     await oneSignalOptOut()
     await signOut()
-    if (typeof window !== 'undefined') window.location.href = '/'
+    await new Promise((r) => setTimeout(r, 300))
+    window.location.href = '/'
   }, [])
 
   return (

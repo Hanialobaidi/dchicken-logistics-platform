@@ -988,10 +988,13 @@ function DriverDashboard() {
     await oneSignalOptOut()
     if (role === 'driver') {
       clearDriverSession()
-      if (typeof window !== 'undefined') window.location.href = '/'
+      await new Promise((r) => setTimeout(r, 300))
+      window.location.href = '/'
       return
     }
     await supabase.auth.signOut()
+    await new Promise((r) => setTimeout(r, 300))
+    window.location.href = '/'
   }, [role])
 
   const hasContent = !!trip || directOrders.length > 0

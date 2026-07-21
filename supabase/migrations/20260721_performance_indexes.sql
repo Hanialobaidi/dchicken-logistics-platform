@@ -99,7 +99,15 @@ END $$;
 -- 3. REALTIME — تأكد إن الجدول يشتغل مع Realtime
 -- ──────────────────────────────────────
 -- direct_orders لازم يكون في publication عشان useRealtimeOrders يشتغل
-ALTER PUBLICATION supabase_realtime ADD TABLE direct_orders;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'direct_orders'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE direct_orders;
+  END IF;
+END $$;
 
 
 -- ──────────────────────────────────────

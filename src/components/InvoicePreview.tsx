@@ -70,17 +70,28 @@ export function InvoicePreview({
       const html2canvas = (await import('html2canvas')).default
       const { jsPDF } = await import('jspdf')
 
-      const canvas = await html2canvas(printRef.current, {
+      const el = printRef.current
+      const clone = el.cloneNode(true) as HTMLElement
+      clone.style.position = 'fixed'
+      clone.style.top = '0'
+      clone.style.left = '0'
+      clone.style.zIndex = '-1'
+      clone.style.opacity = '1'
+      clone.style.transform = 'none'
+      document.body.appendChild(clone)
+
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
       })
 
+      document.body.removeChild(clone)
+
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
-
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
       pdf.save(`invoice-${data.invoiceNumber}.pdf`)
     } catch (err) {

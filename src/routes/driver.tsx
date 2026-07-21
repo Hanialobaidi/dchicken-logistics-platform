@@ -35,7 +35,7 @@ import { InvoicePreview, computeTaxFields } from '@/components/InvoicePreview'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import type { InvoiceData } from '@/components/InvoicePreview'
 import { CHICKEN_TYPES } from '@/types'
-import type { DirectOrder } from '@/types'
+import type { DirectOrder, Invoice } from '@/types'
 import { notifyAdminNewOrder } from '@/lib/notifyAdmin'
 import {
   Truck,
@@ -682,6 +682,124 @@ function DirectOrderDialog({
   )
 }
 
+/* ──── Direct Order Card ──── */
+function DirectOrderCard({
+  order,
+  index,
+  invoiceByOrderId,
+  effectiveDriverName,
+  onEdit,
+  onDelete,
+  onViewInvoice,
+}: {
+  order: DirectOrder
+  index: number
+  invoiceByOrderId: Map<string, Invoice>
+  effectiveDriverName: string
+  onEdit: (order: DirectOrder) => void
+  onDelete: (id: string) => void
+  onViewInvoice: (data: InvoiceData) => void
+}) {
+  const cfg = DIRECT_ORDER_STATUS_CONFIG[order.status] ?? DIRECT_ORDER_STATUS_CONFIG.pending
+  const paymentLabel = PAYMENT_METHODS.find((p) => p.value === order.paymentMethod)?.label ?? order.paymentMethod
+  const canModify = order.status === 'pending'
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm',
+        'animate-fade-in'
+      )}
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            <ClipboardList className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold">{order.restaurantName}</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
+              <Weight className="h-3 w-3" />
+              {order.actualWeight} كجم
+              <span className="mx-0.5">·</span>
+              {order.totalPrice > 0 && (
+                <>
+                  {order.totalPrice.toFixed(2)} ر.س
+                  <span className="mx-0.5">·</span>
+                </>
+              )}
+              <Calendar className="h-3 w-3" />
+              {new Date(order.orderDate).toLocaleDateString('ar-SA')}
+            </p>
+          </div>
+        </div>
+        <Badge variant={cfg.variant}>{cfg.label}</Badge>
+      </div>
+      {order.paymentMethod && (
+        <div className="text-xs text-muted-foreground flex items-center gap-1 pr-10">
+          الدفع: {paymentLabel}
+        </div>
+      )}
+      {order.notes && (
+        <p className="text-xs text-muted-foreground pr-10">{order.notes}</p>
+      )}
+      <div className="flex gap-2 pr-10 flex-wrap">
+        {canModify && (
+          <>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onEdit(order)}>
+              <Pencil className="h-3.5 w-3.5" />
+              تعديل
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="gap-1.5"
+              onClick={() => onDelete(order.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              إلغاء
+            </Button>
+          </>
+        )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          onClick={() => {
+            const inv = invoiceByOrderId.get(order.id)
+            onViewInvoice(inv ? {
+              invoiceNumber: inv.invoiceNumber,
+              date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
+              restaurantName: inv.restaurantName,
+              restaurantTaxNumber: inv.restaurantTaxNumber,
+              driverName: inv.driverName,
+              quantityKg: inv.quantityKg,
+              pricePerKg: inv.pricePerKg,
+              paymentMethod: inv.paymentMethod,
+              paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+              chickenType: inv.chickenType,
+            } : {
+              invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
+              date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
+              restaurantName: order.restaurantName,
+              restaurantTaxNumber: order.restaurantTaxNumber,
+              driverName: effectiveDriverName,
+              quantityKg: order.actualWeight,
+              pricePerKg: order.pricePerKg,
+              paymentMethod: order.paymentMethod,
+              paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+              chickenType: order.chickenType,
+            })
+          }}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          الفاتورة
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 /* ──── Edit Order Dialog ──── */
 function EditOrderDialog({
   open,
@@ -1055,7 +1173,7 @@ function DriverDashboard() {
           </div>
         )}
 
-        {isLoadingData && !trip ? (
+        {isLoadingData ? (
           <div className="space-y-4 animate-pulse">
             <div className="h-40 rounded-xl bg-muted" />
             <div className="h-8 w-1/2 rounded-md bg-muted" />
@@ -1106,6 +1224,32 @@ function DriverDashboard() {
                 ))
               )}
             </div>
+
+            {/* Direct Orders section (inside trip block) */}
+            {directOrders.length > 0 && (
+              <div className="space-y-3 pt-3 border-t">
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  الطلبيات المباشرة المسجلة
+                </h2>
+                {directOrders.map((order, i) => (
+  <DirectOrderCard
+    key={order.id}
+    order={order}
+    index={i}
+    invoiceByOrderId={invoiceByOrderId}
+    effectiveDriverName={effectiveDriverName}
+    onEdit={(o) => setEditingOrder(o)}
+    onDelete={async (id) => {
+      if (!confirm('هل أنت متأكد من إلغاء هذه الطلبية؟')) return
+      await deleteOrder.mutateAsync(id)
+      toast.success('تم إلغاء الطلبية')
+    }}
+    onViewInvoice={(data) => setViewInvoiceData(data)}
+  />
+))}
+              </div>
+            )}
           </>
         ) : !hasContent ? (
           /* Empty state when no trip and no direct orders */
@@ -1125,130 +1269,31 @@ function DriverDashboard() {
               </p>
             </div>
           </div>
-        ) : null}
-
-        {/* Direct Orders section */}
-        <div className="space-y-3">
-          {directOrders.length > 0 && (
-            <>
-              <h2 className="text-sm font-semibold flex items-center gap-2 pt-3 border-t">
-                <ClipboardList className="h-4 w-4 text-primary" />
-                الطلبيات المباشرة المسجلة
-              </h2>
-              {directOrders.map((order, i) => {
-                  const cfg = DIRECT_ORDER_STATUS_CONFIG[order.status] ?? DIRECT_ORDER_STATUS_CONFIG.pending
-                  const paymentLabel = PAYMENT_METHODS.find((p) => p.value === order.paymentMethod)?.label ?? order.paymentMethod
-                  const canModify = order.status === 'pending'
-                  return (
-                    <div
-                      key={order.id}
-                      className={cn(
-                        'flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm',
-                        'animate-fade-in'
-                      )}
-                      style={{ animationDelay: `${i * 80}ms` }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                            <ClipboardList className="h-4 w-4" />
-                          </span>
-                          <div>
-                            <p className="text-sm font-semibold">{order.restaurantName}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
-                              <Weight className="h-3 w-3" />
-                              {order.actualWeight} كجم
-                              <span className="mx-0.5">·</span>
-                              {order.totalPrice > 0 && (
-                                <>
-                                  {order.totalPrice.toFixed(2)} ر.س
-                                  <span className="mx-0.5">·</span>
-                                </>
-                              )}
-                              <Calendar className="h-3 w-3" />
-                              {new Date(order.orderDate).toLocaleDateString('ar-SA')}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                      </div>
-                      {order.paymentMethod && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1 pr-10">
-                          الدفع: {paymentLabel}
-                        </div>
-                      )}
-                      {order.notes && (
-                        <p className="text-xs text-muted-foreground pr-10">{order.notes}</p>
-                      )}
-                      <div className="flex gap-2 pr-10 flex-wrap">
-                        {canModify && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="gap-1.5"
-                              onClick={() => setEditingOrder(order)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              تعديل
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="gap-1.5"
-                              disabled={deleteOrder.isPending}
-                              onClick={async () => {
-                                if (!confirm('هل أنت متأكد من إلغاء هذه الطلبية؟')) return
-                                await deleteOrder.mutateAsync(order.id)
-                                toast.success('تم إلغاء الطلبية')
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              إلغاء
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1.5"
-                          onClick={() => {
-                            const inv = invoiceByOrderId.get(order.id)
-                            setViewInvoiceData(inv ? {
-                              invoiceNumber: inv.invoiceNumber,
-                              date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
-                              restaurantName: inv.restaurantName,
-                              restaurantTaxNumber: inv.restaurantTaxNumber,
-                              driverName: inv.driverName,
-                              quantityKg: inv.quantityKg,
-                              pricePerKg: inv.pricePerKg,
-                              paymentMethod: inv.paymentMethod,
-                              paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-                              chickenType: inv.chickenType,
-                            } : {
-                              invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
-                              date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
-                              restaurantName: order.restaurantName,
-                              restaurantTaxNumber: order.restaurantTaxNumber,
-                              driverName: effectiveDriverName,
-                              quantityKg: order.actualWeight,
-                              pricePerKg: order.pricePerKg,
-                              paymentMethod: order.paymentMethod,
-                              paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-                              chickenType: order.chickenType,
-                            })
-                          }}
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          الفاتورة
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })}
-            </>
-          )}
-        </div>
+        ) : (
+          /* Has direct orders but no trip */
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2 pt-3 border-t">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              الطلبيات المباشرة المسجلة
+            </h2>
+            {directOrders.map((order, i) => (
+  <DirectOrderCard
+    key={order.id}
+    order={order}
+    index={i}
+    invoiceByOrderId={invoiceByOrderId}
+    effectiveDriverName={effectiveDriverName}
+    onEdit={(o) => setEditingOrder(o)}
+    onDelete={async (id) => {
+      if (!confirm('هل أنت متأكد من إلغاء هذه الطلبية؟')) return
+      await deleteOrder.mutateAsync(id)
+      toast.success('تم إلغاء الطلبية')
+    }}
+    onViewInvoice={(data) => setViewInvoiceData(data)}
+  />
+))}
+          </div>
+        )}
 
         {/* FAB: Direct Order */}
         <div className="fixed bottom-6 left-6 z-50">

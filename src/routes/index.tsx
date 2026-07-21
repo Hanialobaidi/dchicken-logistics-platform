@@ -7,7 +7,7 @@ import { Truck, LayoutDashboard, ChefHat, User, Key, LogIn, Mail } from 'lucide-
 import { useState, useEffect } from 'react'
 import { useDriverLogin } from '@/hooks/useDrivers'
 import { signInWithEmail, signOut } from '@/hooks/useAuth'
-import { oneSignalOptIn } from '@/lib/onesignal'
+import { oneSignalOptIn, oneSignalOptOut } from '@/lib/onesignal'
 import { supabase } from '@/lib/supabase'
 import { getDriverSession } from '@/hooks/useDrivers'
 import { toast } from 'sonner'
@@ -49,6 +49,7 @@ function LandingPage() {
     if (localStorage.getItem(REMEMBER_KEY) === 'false') {
       localStorage.removeItem(REMEMBER_KEY)
       signOut()
+      oneSignalOptOut()
       return
     }
 
@@ -61,6 +62,8 @@ function LandingPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         navigate({ to: '/app', replace: true })
+      } else {
+        oneSignalOptOut()
       }
     })
   }, [])

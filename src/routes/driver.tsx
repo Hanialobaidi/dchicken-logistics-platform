@@ -1092,7 +1092,7 @@ function DriverDashboard() {
       select: 'id, driver_id, restaurant_name, actual_weight, notes, status, created_at, price_per_kg, payment_method, total_price, restaurant_tax_number, chicken_type, payment_status, order_date, driver_name, invoice_image_url, owner_id',
       where: { driverId: effectiveDriverId },
       orderBy: { createdAt: 'desc' },
-      limit: 30,
+      limit: 100,
     }),
     enabled: !!effectiveDriverId,
   })
@@ -1103,7 +1103,7 @@ function DriverDashboard() {
       select: 'id, order_id, invoice_number, invoice_date, restaurant_name, restaurant_tax_number, driver_name, quantity_kg, price_per_kg, payment_method, payment_status, chicken_type',
       where: { driverId: effectiveDriverId },
       orderBy: { createdAt: 'desc' },
-      limit: 30,
+      limit: 100,
     }),
     enabled: !!effectiveDriverId,
   })

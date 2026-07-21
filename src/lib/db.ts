@@ -44,27 +44,29 @@ class SupabaseTable {
     let query = supabase.from(this.tableName).select(opts?.select ?? '*')
 
     if (opts?.where) {
+      const applyFilter = (key: string, value: unknown) => {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const filters = value as Record<string, unknown>
+          for (const [op, val] of Object.entries(filters)) {
+            if (op === 'gte') query = query.gte(toSnakeCase(key), val)
+            else if (op === 'lte') query = query.lte(toSnakeCase(key), val)
+            else if (op === 'in') query = query.in(toSnakeCase(key), val as unknown[])
+            else query = query.eq(toSnakeCase(key), val)
+          }
+        } else {
+          query = query.eq(toSnakeCase(key), value)
+        }
+      }
+
       if (opts.where.AND && Array.isArray(opts.where.AND)) {
         for (const condition of opts.where.AND) {
           for (const [key, value] of Object.entries(condition)) {
-            query = query.eq(key, value)
+            applyFilter(key, value)
           }
         }
       } else {
         for (const [key, value] of Object.entries(opts.where)) {
-          if (key !== 'AND') {
-            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-              const filters = value as Record<string, unknown>
-              for (const [op, val] of Object.entries(filters)) {
-                if (op === 'gte') query = query.gte(toSnakeCase(key), val)
-                else if (op === 'lte') query = query.lte(toSnakeCase(key), val)
-                else if (op === 'in') query = query.in(toSnakeCase(key), val as unknown[])
-                else query = query.eq(toSnakeCase(key), val)
-              }
-            } else {
-              query = query.eq(toSnakeCase(key), value)
-            }
-          }
+          if (key !== 'AND') applyFilter(key, value)
         }
       }
     }

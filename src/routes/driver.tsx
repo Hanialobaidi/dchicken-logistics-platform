@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,10 +27,11 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useDriverTrip } from '@/hooks/useDriverTrip'
 import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
-import { useDirectOrders, useCreateDirectOrder, useUpdateDirectOrder, useDeleteDirectOrder } from '@/hooks/useDirectOrders'
+import { useCreateDirectOrder, useUpdateDirectOrder, useDeleteDirectOrder } from '@/hooks/useDirectOrders'
 import { useRestaurants } from '@/hooks/useRestaurants'
-import { useCreateInvoice, useInvoices } from '@/hooks/useInventory'
+import { useCreateInvoice } from '@/hooks/useInventory'
 import { supabase } from '@/lib/supabase'
+import { directOrdersTable, invoicesTable } from '@/lib/db'
 import { clearDriverSession } from '@/hooks/useDrivers'
 import { InvoicePreview, computeTaxFields } from '@/components/InvoicePreview'
 import { ScrollToTop } from '@/components/ScrollToTop'
@@ -1081,10 +1083,30 @@ function DriverDashboard() {
     ? (drivers.find((d) => d.id === effectiveDriverId)?.name ?? '—')
     : (syncSession?.driverName ?? 'السائق')
 
-  const { data: trip, isLoading: tripLoading } = useDriverTrip(effectiveDriverId)
+  const { trip, isLoading: tripLoading } = useDriverTrip(effectiveDriverId)
   const stops = trip?.restaurants ?? []
-  const { data: allDirectOrders = [], isLoading: ordersLoading } = useDirectOrders(effectiveDriverId)
-  const { data: allInvoices = [] } = useInvoices(effectiveDriverId)
+
+  const { data: directOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ['directOrders', { driverId: effectiveDriverId }],
+    queryFn: () => directOrdersTable.list<DirectOrder>({
+      select: 'id, driver_id, restaurant_name, actual_weight, notes, status, created_at, price_per_kg, payment_method, total_price, restaurant_tax_number, chicken_type, payment_status, order_date, driver_name, invoice_image_url, owner_id',
+      where: { driverId: effectiveDriverId },
+      orderBy: { createdAt: 'desc' },
+      limit: 30,
+    }),
+    enabled: !!effectiveDriverId,
+  })
+
+  const { data: allInvoices = [] } = useQuery({
+    queryKey: ['invoices', { driverId: effectiveDriverId }],
+    queryFn: () => invoicesTable.list<Invoice>({
+      select: 'id, order_id, invoice_number, invoice_date, restaurant_name, restaurant_tax_number, driver_name, quantity_kg, price_per_kg, payment_method, payment_status, chicken_type',
+      where: { driverId: effectiveDriverId },
+      orderBy: { createdAt: 'desc' },
+      limit: 30,
+    }),
+    enabled: !!effectiveDriverId,
+  })
 
   const isLoadingData = authLoading || tripLoading || ordersLoading
 
@@ -1098,7 +1120,7 @@ function DriverDashboard() {
 
   const ONE_DAY_MS = 24 * 60 * 60 * 1000
   const now = Date.now()
-  const directOrders = allDirectOrders.filter(
+  const filteredDirectOrders = directOrders.filter(
     (o) => (now - new Date(o.createdAt).getTime()) < ONE_DAY_MS
   )
 
@@ -1117,7 +1139,7 @@ function DriverDashboard() {
     window.location.href = '/'
   }, [role])
 
-  const hasContent = !!trip || directOrders.length > 0
+  const hasContent = !!trip || filteredDirectOrders.length > 0
 
   return (
     <div dir="rtl" className="min-h-dvh bg-background">
@@ -1226,13 +1248,13 @@ function DriverDashboard() {
             </div>
 
             {/* Direct Orders section (inside trip block) */}
-            {directOrders.length > 0 && (
+            {filteredDirectOrders.length > 0 && (
               <div className="space-y-3 pt-3 border-t">
                 <h2 className="text-sm font-semibold flex items-center gap-2">
                   <ClipboardList className="h-4 w-4 text-primary" />
                   الطلبيات المباشرة المسجلة
                 </h2>
-                {directOrders.map((order, i) => (
+                {filteredDirectOrders.map((order, i) => (
   <DirectOrderCard
     key={order.id}
     order={order}
@@ -1276,7 +1298,7 @@ function DriverDashboard() {
               <ClipboardList className="h-4 w-4 text-primary" />
               الطلبيات المباشرة المسجلة
             </h2>
-            {directOrders.map((order, i) => (
+            {filteredDirectOrders.map((order, i) => (
   <DirectOrderCard
     key={order.id}
     order={order}
@@ -1308,25 +1330,29 @@ function DriverDashboard() {
         </div>
       </main>
 
-      {/* Direct Order Dialog */}
-      <DirectOrderDialog
-        open={directOrderOpen}
-        onOpenChange={setDirectOrderOpen}
-        driverId={effectiveDriverId}
-        driverName={effectiveDriverName}
-        userId={effectiveDriverId}
-      />
+      {/* Direct Order Dialog — only mount when open to skip useRestaurants query */}
+      {directOrderOpen && (
+        <DirectOrderDialog
+          open={directOrderOpen}
+          onOpenChange={setDirectOrderOpen}
+          driverId={effectiveDriverId}
+          driverName={effectiveDriverName}
+          userId={effectiveDriverId}
+        />
+      )}
 
-      {/* Edit Order Dialog */}
-      <EditOrderDialog
-        open={!!editingOrder}
-        onOpenChange={(o) => { if (!o) setEditingOrder(null) }}
-        order={editingOrder}
-        driverId={effectiveDriverId}
-        driverName={effectiveDriverName}
-        onSaved={() => setEditingOrder(null)}
-        onInvoiceIssued={(data) => setEditInvoiceData(data)}
-      />
+      {/* Edit Order Dialog — only mount when editing */}
+      {editingOrder && (
+        <EditOrderDialog
+          open={!!editingOrder}
+          onOpenChange={(o) => { if (!o) setEditingOrder(null) }}
+          order={editingOrder}
+          driverId={effectiveDriverId}
+          driverName={effectiveDriverName}
+          onSaved={() => setEditingOrder(null)}
+          onInvoiceIssued={(data) => setEditInvoiceData(data)}
+        />
+      )}
 
       {/* Edit Order Invoice Preview */}
       {editInvoiceData && (

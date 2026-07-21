@@ -2,28 +2,44 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tripsTable, tripRestaurantsTable, cleanData } from '@/lib/db'
 import type { Trip, TripRestaurant } from '@/types'
 
-/** Get the driver's most recent trip for today with restaurants in one query. */
+/**
+ * Get today's trip and its restaurants as TWO separate queries.
+ * Query 2 fires as soon as Query 1 returns a trip ID.
+ */
 export function useDriverTrip(driverId: string) {
-  return useQuery({
+  const today = new Date().toISOString().slice(0, 10)
+
+  const tripQuery = useQuery({
     queryKey: ['driverTrip', driverId],
-    queryFn: async () => {
-      const today = new Date().toISOString().slice(0, 10)
-      const trips = await tripsTable.list<Trip & { tripRestaurants?: TripRestaurant[] }>({
+    queryFn: () =>
+      tripsTable.list<Trip>({
+        select: 'id, trip_date, total_weight, driver_id, created_at',
         where: { AND: [{ driverId }, { tripDate: today }] },
         orderBy: { createdAt: 'desc' },
         limit: 1,
-      })
-      const trip = trips[0] ?? null
-      if (!trip) return null
-      const restaurants = await tripRestaurantsTable.list<TripRestaurant>({
-        where: { tripId: trip.id },
-        orderBy: { createdAt: 'asc' },
-      })
-      return { ...trip, restaurants }
-    },
+      }),
     enabled: !!driverId,
     staleTime: 30_000,
   })
+
+  const trip = tripQuery.data?.[0] ?? null
+
+  const restaurantsQuery = useQuery({
+    queryKey: ['tripRestaurants', trip?.id ?? ''],
+    queryFn: () =>
+      tripRestaurantsTable.list<TripRestaurant>({
+        select: 'id, restaurant_name, weight, status, actual_weight, invoice_image_url, notes, delivered_at, trip_id',
+        where: { tripId: trip!.id },
+        orderBy: { createdAt: 'asc' },
+      }),
+    enabled: !!trip?.id,
+    staleTime: 30_000,
+  })
+
+  return {
+    trip: trip ? { ...trip, restaurants: restaurantsQuery.data ?? [] } : null,
+    isLoading: tripQuery.isLoading,
+  }
 }
 
 export interface ConfirmDeliveryInput {

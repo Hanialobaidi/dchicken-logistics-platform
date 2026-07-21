@@ -459,6 +459,13 @@ function DirectOrderDialog({
                   placeholder="اكتب نوع الدجاج الجديد..."
                   value={customChickenType}
                   onChange={(e) => setCustomChickenType(e.target.value)}
+                  onBlur={async () => {
+                    if (customChickenType.trim()) {
+                      await createChickenType.mutateAsync(customChickenType.trim())
+                      setChickenType(customChickenType.trim())
+                      setCustomChickenType('')
+                    }
+                  }}
                   className="text-right h-11"
                   autoFocus
                 />
@@ -987,6 +994,13 @@ function EditOrderDialog({
                 placeholder="اكتب نوع الدجاج الجديد..."
                 value={customChickenType}
                 onChange={(e) => setCustomChickenType(e.target.value)}
+                onBlur={async () => {
+                  if (customChickenType.trim()) {
+                    await createChickenType.mutateAsync(customChickenType.trim())
+                    setChickenType(customChickenType.trim())
+                    setCustomChickenType('')
+                  }
+                }}
                 className="text-right h-11"
                 autoFocus
               />

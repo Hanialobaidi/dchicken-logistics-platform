@@ -8,7 +8,7 @@ export interface Restaurant {
   ownerId: string
 }
 
-export const CHICKEN_TYPES = ['شاورما مبرد (فريش)', 'أخرى'] as const
+export const CHICKEN_TYPES = ['شاورما مبرد (فريش)'] as const
 
 export interface Trip {
   id: string

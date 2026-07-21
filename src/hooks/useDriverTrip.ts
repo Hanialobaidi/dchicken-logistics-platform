@@ -15,7 +15,6 @@ export function useDriverTrip(driverId: string) {
       })
       const trip = trips[0] ?? null
       if (!trip) return null
-      // Try to fetch trip restaurants in parallel
       const restaurants = await tripRestaurantsTable.list<TripRestaurant>({
         where: { tripId: trip.id },
         orderBy: { createdAt: 'asc' },
@@ -23,6 +22,7 @@ export function useDriverTrip(driverId: string) {
       return { ...trip, restaurants }
     },
     enabled: !!driverId,
+    staleTime: 30_000,
   })
 }
 

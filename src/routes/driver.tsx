@@ -942,7 +942,7 @@ function EditOrderDialog({
 
 /* ──── DriverDashboard ──── */
 function DriverDashboard() {
-  const { role } = useAuth()
+  const { role, isLoading: authLoading } = useAuth()
   const { data: drivers = [] } = useDrivers(role === 'admin')
 
   const [selectedDriverId, setSelectedDriverId] = useState('')
@@ -965,8 +965,10 @@ function DriverDashboard() {
 
   const { data: trip, isLoading: tripLoading } = useDriverTrip(effectiveDriverId)
   const stops = trip?.restaurants ?? []
-  const { data: allDirectOrders = [] } = useDirectOrders(effectiveDriverId)
+  const { data: allDirectOrders = [], isLoading: ordersLoading } = useDirectOrders(effectiveDriverId)
   const { data: allInvoices = [] } = useInvoices(effectiveDriverId)
+
+  const isLoadingData = authLoading || tripLoading || ordersLoading
 
   const invoiceByOrderId = useMemo(() => {
     const map = new Map<string, typeof allInvoices[0]>()
@@ -1053,7 +1055,7 @@ function DriverDashboard() {
           </div>
         )}
 
-        {tripLoading && !trip ? (
+        {isLoadingData && !trip ? (
           <div className="space-y-4 animate-pulse">
             <div className="h-40 rounded-xl bg-muted" />
             <div className="h-8 w-1/2 rounded-md bg-muted" />

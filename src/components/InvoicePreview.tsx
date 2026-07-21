@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Printer, X, Download } from 'lucide-react'
+import { Printer, X } from 'lucide-react'
 
 const COMPANY = {
   name: 'شركة آفاق الرغد للدواجن',
@@ -53,7 +53,6 @@ export function InvoicePreview({
   onClose: () => void
 }) {
   const printRef = useRef<HTMLDivElement>(null)
-  const [generating, setGenerating] = useState(false)
   const { totalAmount, subtotalBeforeTax, vatAmount } = computeTaxFields(
     data.quantityKg,
     data.pricePerKg,
@@ -61,56 +60,6 @@ export function InvoicePreview({
 
   const handlePrint = () => {
     window.print()
-  }
-
-  const handleDownloadPDF = async () => {
-    if (!printRef.current || generating) return
-    setGenerating(true)
-    try {
-      const html2canvas = (await import('html2canvas')).default
-      const { jsPDF } = await import('jspdf')
-
-      const source = printRef.current
-
-      const clone = source.cloneNode(true) as HTMLElement
-      clone.style.position = 'fixed'
-      clone.style.left = '-9999px'
-      clone.style.top = '0'
-      clone.style.zIndex = '-1'
-      clone.style.margin = '0'
-      clone.style.boxShadow = 'none'
-      clone.style.setProperty('print-color-adjust', 'exact')
-      clone.style.setProperty('-webkit-print-color-adjust', 'exact')
-      document.body.appendChild(clone)
-
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
-
-      const canvas = await html2canvas(clone, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        width: 794,
-        height: 1123,
-        windowWidth: 794,
-        windowHeight: 1123,
-      })
-
-      document.body.removeChild(clone)
-
-      const imgData = canvas.toDataURL('image/png', 1.0)
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save(`invoice-${data.invoiceNumber}.pdf`)
-    } catch (err) {
-      console.error('PDF generation failed:', err)
-      alert('فشل إنشاء ملف PDF. يمكنك استخدام طباعةPDF من متصفحك كبديل.')
-    } finally {
-      setGenerating(false)
-    }
   }
 
   const chickenTypeLabel = data.chickenType || 'شاورما مبرد (فريش)'
@@ -122,19 +71,6 @@ export function InvoicePreview({
       <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/50 print:bg-transparent print:static">
         <div className="relative my-4 w-full max-w-[210mm] print:max-w-none print:my-0">
           <div className="sticky top-0 z-10 flex items-center justify-end gap-2 p-2 print:hidden">
-            <Button
-              size="sm"
-              onClick={handleDownloadPDF}
-              disabled={generating}
-              className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-9"
-            >
-              {generating ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              تحميل PDF
-            </Button>
             <Button
               size="sm"
               onClick={handlePrint}

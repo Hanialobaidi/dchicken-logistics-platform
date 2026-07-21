@@ -46,6 +46,7 @@ function DriversPage() {
   const [plateNumber, setPlateNumber] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [salary, setSalary] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [search, setSearch] = useState('')
 
@@ -66,6 +67,7 @@ function DriversPage() {
     setPlateNumber('')
     setUsername('')
     setPassword('')
+    setSalary('')
     setDialogOpen(true)
   }
 
@@ -76,6 +78,7 @@ function DriversPage() {
     setPlateNumber(driver.plateNumber)
     setUsername(driver.username ?? '')
     setPassword(driver.password ?? '')
+    setSalary(driver.salary != null ? String(driver.salary) : '')
     setDialogOpen(true)
   }
 
@@ -87,12 +90,14 @@ function DriversPage() {
     }
     setSubmitting(true)
     try {
+      const salaryNum = salary.trim() ? Number(salary.trim()) : null
       if (editingDriver) {
-        const updateData: { id: string; name?: string; phone?: string; plateNumber?: string; username?: string; password?: string } = {
+        const updateData: { id: string; name?: string; phone?: string; plateNumber?: string; username?: string; password?: string; salary?: number | null } = {
           id: editingDriver.id,
           name: name.trim(),
           phone: phone.trim(),
           plateNumber: plateNumber.trim(),
+          salary: salaryNum,
         }
         if (username.trim()) updateData.username = username.trim()
         if (password.trim()) updateData.password = password.trim()
@@ -105,6 +110,7 @@ function DriversPage() {
           plateNumber: plateNumber.trim(),
           username: username.trim(),
           password: password,
+          salary: salaryNum,
         })
         toast.success('تم إضافة السائق بنجاح')
       }
@@ -113,6 +119,7 @@ function DriversPage() {
       setPlateNumber('')
       setUsername('')
       setPassword('')
+      setSalary('')
       setDialogOpen(false)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -196,6 +203,7 @@ function DriversPage() {
                   <TableHead className="text-right">اسم المستخدم</TableHead>
                   <TableHead className="text-right">رقم الجوال</TableHead>
                   <TableHead className="text-right">رقم اللوحة</TableHead>
+                  <TableHead className="text-right">الراتب</TableHead>
                   <TableHead className="w-[100px]" />
                 </TableRow>
               </TableHeader>
@@ -220,6 +228,9 @@ function DriversPage() {
                         <Car className="h-3 w-3" />
                         {d.plateNumber || '—'}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {d.salary != null ? `${Number(d.salary).toLocaleString('ar-SA')} ر.س` : '—'}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -323,6 +334,18 @@ function DriversPage() {
                 placeholder="مثال: أ ب ج 1234"
                 value={plateNumber}
                 onChange={(e) => setPlateNumber(e.target.value)}
+                className="text-right"
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="salary">الراتب (ر.س)</Label>
+              <Input
+                id="salary"
+                type="number"
+                placeholder="مثال: 5000"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
                 className="text-right"
                 dir="ltr"
               />

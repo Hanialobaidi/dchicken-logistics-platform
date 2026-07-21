@@ -46,6 +46,7 @@ export interface Driver {
   plateNumber: string
   username: string
   password: string
+  salary: number | null
   createdAt: string
   ownerId: string
 }

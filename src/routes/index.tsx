@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label'
 import { Truck, LayoutDashboard, ChefHat, User, Key, LogIn, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { useDriverLogin } from '@/hooks/useDrivers'
-import { signInWithEmail } from '@/hooks/useAuth'
+import { signInWithEmail, signOut } from '@/hooks/useAuth'
 import { toast } from 'sonner'
+
+const REMEMBER_KEY = 'dchicken_remember_me'
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -27,14 +29,31 @@ function LandingPage() {
   const [adminEmail, setAdminEmail] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
   const [adminLoading, setAdminLoading] = useState(false)
+  const [adminRemember, setAdminRemember] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem(REMEMBER_KEY) !== 'false'
+  })
   const [driverUsername, setDriverUsername] = useState('')
   const [driverPassword, setDriverPassword] = useState('')
+  const [driverRemember, setDriverRemember] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem(REMEMBER_KEY) !== 'false'
+  })
+
+  useState(() => {
+    if (typeof window === 'undefined') return
+    if (localStorage.getItem(REMEMBER_KEY) === 'false') {
+      localStorage.removeItem(REMEMBER_KEY)
+      signOut()
+    }
+  })
 
   const handleAdminLogin = async () => {
     if (!adminEmail.trim() || !adminPassword.trim()) return
     setAdminLoading(true)
     try {
       await signInWithEmail(adminEmail.trim(), adminPassword)
+      localStorage.setItem(REMEMBER_KEY, adminRemember ? 'true' : 'false')
       toast.success('تم تسجيل الدخول بنجاح')
       navigate({ to: '/app' })
     } catch (err) {
@@ -52,6 +71,7 @@ function LandingPage() {
         username: driverUsername.trim(),
         password: driverPassword,
       })
+      localStorage.setItem(REMEMBER_KEY, driverRemember ? 'true' : 'false')
       toast.success('تم تسجيل الدخول بنجاح')
       navigate({ to: '/driver' })
     } catch (err) {
@@ -144,6 +164,15 @@ function LandingPage() {
                         onKeyDown={(e) => { if (e.key === 'Enter') handleAdminLogin() }}
                       />
                     </div>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={adminRemember}
+                        onChange={(e) => setAdminRemember(e.target.checked)}
+                        className="accent-primary"
+                      />
+                      تذكرني في هذا الجهاز
+                    </label>
                     <Button
                       size="lg"
                       className="w-full min-h-[48px] gap-2 text-sm font-medium"
@@ -230,6 +259,15 @@ function LandingPage() {
                         onKeyDown={(e) => { if (e.key === 'Enter') handleDriverLogin() }}
                       />
                     </div>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={driverRemember}
+                        onChange={(e) => setDriverRemember(e.target.checked)}
+                        className="accent-primary"
+                      />
+                      تذكرني في هذا الجهاز
+                    </label>
                     <Button
                       size="lg"
                       className="w-full min-h-[48px] gap-2 text-sm font-medium"

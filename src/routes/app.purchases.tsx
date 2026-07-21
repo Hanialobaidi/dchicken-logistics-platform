@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/select'
 import { CHICKEN_TYPES } from '@/types'
 import type { Purchase } from '@/types'
+import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
 import { SearchInput } from '@/components/SearchInput'
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat('ar-SA', {
@@ -66,6 +67,13 @@ function PurchasesPage() {
   const inventory = useInventory()
   const createPurchase = useCreatePurchase()
   const deletePurchase = useDeletePurchase()
+  const { data: customTypes = [] } = useChickenTypes()
+  const createChickenType = useCreateChickenType()
+
+  const allChickenTypes = useMemo(
+    () => [...CHICKEN_TYPES, ...customTypes.map((t) => t.name)],
+    [customTypes],
+  )
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [farmName, setFarmName] = useState('')
@@ -117,12 +125,22 @@ function PurchasesPage() {
     if (!farmName.trim() || !quantityKg || !pricePerKg) return
     setSubmitting(true)
     try {
+      const finalChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
+      if (!finalChickenType) {
+        toast.error('اكتب نوع الدجاج')
+        setSubmitting(false)
+        return
+      }
+      // Save new chicken type if it's a custom one
+      if (chickenType === '__add__' && customChickenType.trim()) {
+        await createChickenType.mutateAsync(customChickenType.trim())
+      }
       await createPurchase.mutateAsync({
         purchaseDate,
         farmName: farmName.trim(),
         quantityKg: quantity,
         pricePerKg: price,
-        chickenType: chickenType === 'أخرى' ? customChickenType.trim() : chickenType,
+        chickenType: finalChickenType,
         notes: notes.trim() || undefined,
       })
       toast.success('تم إضافة عملية الشراء بنجاح — تم تحديث المخزون تلقائياً')
@@ -383,19 +401,21 @@ function PurchasesPage() {
                   <SelectValue placeholder="اختر نوع الدجاج..." />
                 </SelectTrigger>
                 <SelectContent align="end">
-                  {CHICKEN_TYPES.map((ct) => (
+                  {allChickenTypes.map((ct) => (
                     <SelectItem key={ct} value={ct}>
                       {ct}
                     </SelectItem>
                   ))}
+                  <SelectItem value="__add__" className="text-primary font-medium">+ إضافة نوع جديد</SelectItem>
                 </SelectContent>
               </Select>
-              {chickenType === 'أخرى' && (
+              {chickenType === '__add__' && (
                 <Input
-                  placeholder="اكتب نوع الدجاج..."
+                  placeholder="اكتب نوع الدجاج الجديد..."
                   value={customChickenType}
                   onChange={(e) => setCustomChickenType(e.target.value)}
                   className="text-right h-11"
+                  autoFocus
                 />
               )}
             </div>

@@ -38,6 +38,7 @@ import { ScrollToTop } from '@/components/ScrollToTop'
 import type { InvoiceData } from '@/components/InvoicePreview'
 import { CHICKEN_TYPES } from '@/types'
 import type { DirectOrder, Invoice } from '@/types'
+import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
 import { notifyAdminNewOrder } from '@/lib/notifyAdmin'
 import {
   Truck,
@@ -164,6 +165,12 @@ function DirectOrderDialog({
   const { data: restaurants = [] } = useRestaurants()
   const createDirectOrder = useCreateDirectOrder()
   const createInvoice = useCreateInvoice()
+  const { data: customTypes = [] } = useChickenTypes()
+  const createChickenType = useCreateChickenType()
+  const allChickenTypes = useMemo(
+    () => [...CHICKEN_TYPES, ...customTypes.map((t) => t.name)],
+    [customTypes],
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10))
@@ -266,7 +273,12 @@ function DirectOrderDialog({
         invoiceImageUrl = urlData.publicUrl
       }
 
-      const effectiveChickenType = chickenType === 'أخرى' ? customChickenType.trim() : chickenType
+      const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
+
+      // Save new chicken type if custom
+      if (chickenType === '__add__' && customChickenType.trim()) {
+        await createChickenType.mutateAsync(customChickenType.trim())
+      }
 
       await createDirectOrder.mutateAsync({
         driverId,
@@ -434,19 +446,21 @@ function DirectOrderDialog({
                   <SelectValue placeholder="اختر نوع الدجاج..." />
                 </SelectTrigger>
                 <SelectContent align="end">
-                  {CHICKEN_TYPES.map((ct) => (
+                  {allChickenTypes.map((ct) => (
                     <SelectItem key={ct} value={ct}>
                       {ct}
                     </SelectItem>
                   ))}
+                  <SelectItem value="__add__" className="text-primary font-medium">+ إضافة نوع جديد</SelectItem>
                 </SelectContent>
               </Select>
-              {chickenType === 'أخرى' && (
+              {chickenType === '__add__' && (
                 <Input
-                  placeholder="اكتب نوع الدجاج..."
+                  placeholder="اكتب نوع الدجاج الجديد..."
                   value={customChickenType}
                   onChange={(e) => setCustomChickenType(e.target.value)}
                   className="text-right h-11"
+                  autoFocus
                 />
               )}
             </div>
@@ -834,6 +848,12 @@ function EditOrderDialog({
 }) {
   const updateOrder = useUpdateDirectOrder()
   const createInvoice = useCreateInvoice()
+  const { data: customTypes = [] } = useChickenTypes()
+  const createChickenType = useCreateChickenType()
+  const allChickenTypes = useMemo(
+    () => [...CHICKEN_TYPES, ...customTypes.map((t) => t.name)],
+    [customTypes],
+  )
 
   const [actualWeight, setActualWeight] = useState('')
   const [pricePerKg, setPricePerKg] = useState('')
@@ -847,8 +867,9 @@ function EditOrderDialog({
       setActualWeight(String(order.actualWeight || ''))
       setPricePerKg(String(order.pricePerKg || ''))
       setPaymentMethod(order.paymentMethod || 'cash')
-      setChickenType(order.chickenType === 'أخرى' ? 'أخرى' : (order.chickenType || CHICKEN_TYPES[0]))
-      setCustomChickenType(order.chickenType !== 'أخرى' ? '' : order.chickenType)
+      const isKnownType = allChickenTypes.includes(order.chickenType)
+      setChickenType(isKnownType ? order.chickenType : '__add__')
+      setCustomChickenType(isKnownType ? '' : order.chickenType)
       setNotes(order.notes || '')
     }
   }, [order, open])
@@ -862,7 +883,10 @@ function EditOrderDialog({
 
   const handleSubmit = async () => {
     if (!order || !actualWeight.trim() || !pricePerKg) return
-    const effectiveChickenType = chickenType === 'أخرى' ? customChickenType.trim() : chickenType
+    const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
+    if (chickenType === '__add__' && customChickenType.trim()) {
+      await createChickenType.mutateAsync(customChickenType.trim())
+    }
 
     await updateOrder.mutateAsync({
       id: order.id,
@@ -880,7 +904,10 @@ function EditOrderDialog({
 
   const handleIssueInvoice = async () => {
     if (!order || !actualWeight.trim() || !pricePerKg) return
-    const effectiveChickenType = chickenType === 'أخرى' ? customChickenType.trim() : chickenType
+    const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
+    if (chickenType === '__add__' && customChickenType.trim()) {
+      await createChickenType.mutateAsync(customChickenType.trim())
+    }
 
     await updateOrder.mutateAsync({
       id: order.id,
@@ -949,17 +976,19 @@ function EditOrderDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="end">
-                {CHICKEN_TYPES.map((ct) => (
+                {allChickenTypes.map((ct) => (
                   <SelectItem key={ct} value={ct}>{ct}</SelectItem>
                 ))}
+                <SelectItem value="__add__" className="text-primary font-medium">+ إضافة نوع جديد</SelectItem>
               </SelectContent>
             </Select>
-            {chickenType === 'أخرى' && (
+            {chickenType === '__add__' && (
               <Input
-                placeholder="اكتب نوع الدجاج..."
+                placeholder="اكتب نوع الدجاج الجديد..."
                 value={customChickenType}
                 onChange={(e) => setCustomChickenType(e.target.value)}
                 className="text-right h-11"
+                autoFocus
               />
             )}
           </div>

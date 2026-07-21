@@ -984,6 +984,8 @@ function DriverDashboard() {
 
   const userName = effectiveDriverName
   const handleLogout = useCallback(async () => {
+    const { oneSignalOptOut } = await import('@/lib/onesignal')
+    await oneSignalOptOut()
     if (role === 'driver') {
       clearDriverSession()
       if (typeof window !== 'undefined') window.location.href = '/'

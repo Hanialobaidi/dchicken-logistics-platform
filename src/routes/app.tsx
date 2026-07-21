@@ -92,6 +92,8 @@ function AdminSidebar() {
 
   const handleLogout = useCallback(async () => {
     const { signOut } = await import('@/hooks/useAuth')
+    const { oneSignalOptOut } = await import('@/lib/onesignal')
+    await oneSignalOptOut()
     await signOut()
     if (typeof window !== 'undefined') window.location.href = '/'
   }, [])

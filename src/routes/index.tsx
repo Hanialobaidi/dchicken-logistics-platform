@@ -7,6 +7,7 @@ import { Truck, LayoutDashboard, ChefHat, User, Key, LogIn, Mail } from 'lucide-
 import { useState, useEffect } from 'react'
 import { useDriverLogin } from '@/hooks/useDrivers'
 import { signInWithEmail, signOut } from '@/hooks/useAuth'
+import { oneSignalOptIn } from '@/lib/onesignal'
 import { supabase } from '@/lib/supabase'
 import { getDriverSession } from '@/hooks/useDrivers'
 import { toast } from 'sonner'
@@ -70,6 +71,7 @@ function LandingPage() {
     try {
       await signInWithEmail(adminEmail.trim(), adminPassword)
       localStorage.setItem(REMEMBER_KEY, adminRemember ? 'true' : 'false')
+      oneSignalOptIn()
       toast.success('تم تسجيل الدخول بنجاح')
       navigate({ to: '/app' })
     } catch (err) {
@@ -88,6 +90,7 @@ function LandingPage() {
         password: driverPassword,
       })
       localStorage.setItem(REMEMBER_KEY, driverRemember ? 'true' : 'false')
+      oneSignalOptIn()
       toast.success('تم تسجيل الدخول بنجاح')
       navigate({ to: '/driver' })
     } catch (err) {

@@ -107,8 +107,8 @@ function LandingPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Brand */}
         <div className="text-center space-y-3">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
-            <ChefHat className="h-10 w-10 text-primary" />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20 overflow-hidden">
+            <img src="/icon-192.png" alt="DChicken" className="h-full w-full object-contain" />
           </div>
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight">DChicken</h1>

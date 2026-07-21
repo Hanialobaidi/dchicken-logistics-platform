@@ -117,11 +117,16 @@ function AdminSidebar() {
         >
           {!collapsed && (
             <>
-              <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary text-primary-foreground text-xs font-bold shrink-0">
-                <ChefHat className="h-4 w-4" />
+              <div className="flex items-center justify-center h-7 w-7 rounded-md overflow-hidden shrink-0">
+                <img src="/icon-192.png" alt="DChicken" className="h-full w-full object-contain" />
               </div>
               <span className="flex-1 font-semibold text-sm truncate">DChicken</span>
             </>
+          )}
+          {collapsed && (
+            <div className="flex items-center justify-center h-7 w-7 rounded-md overflow-hidden shrink-0">
+              <img src="/icon-192.png" alt="DChicken" className="h-full w-full object-contain" />
+            </div>
           )}
           <Tooltip>
             <TooltipTrigger asChild>

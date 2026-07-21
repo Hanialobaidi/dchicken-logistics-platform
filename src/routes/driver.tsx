@@ -1198,7 +1198,9 @@ function DriverDashboard() {
             >
               <ArrowRight className="h-5 w-5" />
             </Button>
-            <Truck className="h-5 w-5 text-primary" />
+            <div className="h-6 w-6 rounded-md overflow-hidden shrink-0">
+              <img src="/icon-192.png" alt="DChicken" className="h-full w-full object-contain" />
+            </div>
             <span className="text-sm font-bold tracking-tight">
               DChicken
               <span className="mx-1.5 text-muted-foreground">|</span>

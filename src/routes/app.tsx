@@ -18,11 +18,14 @@ import {
   ChefHat,
   Users,
   ShoppingCart,
+  Moon,
+  Sun,
   BarChart3,
 } from 'lucide-react'
 import { useState, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/hooks/useTheme'
 import type { ReactNode } from 'react'
 
 const SIDEBAR_KEY = 'admin_sidebar_collapsed'
@@ -86,6 +89,7 @@ function AdminSidebar() {
   }, [])
 
   const { user } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const userInitial = user?.email?.[0]?.toUpperCase() ?? 'A'
   const userName = user?.email?.split('@')[0] ?? 'المستخدم'
   const userEmail = user?.email ?? ''
@@ -146,6 +150,21 @@ function AdminSidebar() {
             </TooltipTrigger>
             <TooltipContent side="right">
               {collapsed ? 'توسيع القائمة' : 'طي القائمة'}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={toggleTheme}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
             </TooltipContent>
           </Tooltip>
         </div>

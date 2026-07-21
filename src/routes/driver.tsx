@@ -30,6 +30,8 @@ import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
 import { useCreateDirectOrder, useUpdateDirectOrder, useDeleteDirectOrder } from '@/hooks/useDirectOrders'
 import { useRestaurants } from '@/hooks/useRestaurants'
 import { useCreateInvoice } from '@/hooks/useInventory'
+import { useTheme } from '@/hooks/useTheme'
+import { Moon, Sun } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { directOrdersTable, invoicesTable } from '@/lib/db'
 import { clearDriverSession } from '@/hooks/useDrivers'
@@ -1107,6 +1109,7 @@ function EditOrderDialog({
 function DriverDashboard() {
   const { role, isLoading: authLoading } = useAuth()
   const { data: drivers = [] } = useDrivers(role === 'admin')
+  const { theme, toggleTheme } = useTheme()
 
   const [selectedDriverId, setSelectedDriverId] = useState('')
   const [directOrderOpen, setDirectOrderOpen] = useState(false)
@@ -1208,6 +1211,9 @@ function DriverDashboard() {
             </span>
           </div>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={toggleTheme}>
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-9">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline text-xs">{userName}</span>

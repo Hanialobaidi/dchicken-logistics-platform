@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Truck, LayoutDashboard, ChefHat, User, Key, LogIn, Mail } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useTheme } from '@/hooks/useTheme'
+import { Moon, Sun } from 'lucide-react'
 import { useDriverLogin } from '@/hooks/useDrivers'
 import { signInWithEmail, signOut } from '@/hooks/useAuth'
 import { oneSignalOptIn, oneSignalOptOut } from '@/lib/onesignal'
@@ -27,6 +29,7 @@ export const Route = createFileRoute('/')({
 function LandingPage() {
   const navigate = useNavigate()
   const driverLogin = useDriverLogin()
+  const { theme, toggleTheme } = useTheme()
   const [showDriverLogin, setShowDriverLogin] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [adminEmail, setAdminEmail] = useState('')
@@ -104,6 +107,13 @@ function LandingPage() {
 
   return (
     <div dir="rtl" className="flex min-h-dvh flex-col items-center justify-center bg-background px-4">
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-card text-card-foreground shadow-md ring-1 ring-border hover:bg-accent transition-colors"
+        aria-label={theme === 'dark' ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'}
+      >
+        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      </button>
       <div className="w-full max-w-sm space-y-8">
         {/* Brand */}
         <div className="text-center space-y-3">

@@ -4,9 +4,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Truck, LayoutDashboard, ChefHat, User, Key, LogIn, Mail } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDriverLogin } from '@/hooks/useDrivers'
 import { signInWithEmail, signOut } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
+import { getDriverSession } from '@/hooks/useDrivers'
 import { toast } from 'sonner'
 
 const REMEMBER_KEY = 'dchicken_remember_me'
@@ -40,13 +42,27 @@ function LandingPage() {
     return localStorage.getItem(REMEMBER_KEY) !== 'false'
   })
 
-  useState(() => {
+  useEffect(() => {
     if (typeof window === 'undefined') return
+
     if (localStorage.getItem(REMEMBER_KEY) === 'false') {
       localStorage.removeItem(REMEMBER_KEY)
       signOut()
+      return
     }
-  })
+
+    const ds = getDriverSession()
+    if (ds) {
+      navigate({ to: '/driver', replace: true })
+      return
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        navigate({ to: '/app', replace: true })
+      }
+    })
+  }, [])
 
   const handleAdminLogin = async () => {
     if (!adminEmail.trim() || !adminPassword.trim()) return

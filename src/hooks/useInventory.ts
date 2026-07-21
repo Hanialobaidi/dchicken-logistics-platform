@@ -8,18 +8,18 @@ import type { Purchase, DirectOrder, Trip, Invoice } from '@/types'
  */
 export function useInventory() {
   const purchases = useQuery({
-    queryKey: ['purchases'],
+    queryKey: ['inventory', 'purchases'],
     queryFn: () => purchasesTable.list<Purchase>({ select: 'id, quantity_kg, purchase_date', orderBy: { purchaseDate: 'desc' } }),
   })
 
   const directOrders = useQuery({
-    queryKey: ['directOrders'],
-    queryFn: () => directOrdersTable.list<DirectOrder>({ orderBy: { createdAt: 'desc' } }),
+    queryKey: ['inventory', 'directOrders'],
+    queryFn: () => directOrdersTable.list<DirectOrder>({ select: 'id, actual_weight, status, created_at', orderBy: { createdAt: 'desc' }, limit: 500 }),
   })
 
   const trips = useQuery({
-    queryKey: ['trips'],
-    queryFn: () => tripsTable.list<Trip>({ select: 'id, status, total_weight, created_at', orderBy: { createdAt: 'desc' } }),
+    queryKey: ['inventory', 'trips'],
+    queryFn: () => tripsTable.list<Trip>({ select: 'id, status, total_weight, created_at', orderBy: { createdAt: 'desc' }, limit: 500 }),
   })
 
   const totalPurchasedKg = useMemo(

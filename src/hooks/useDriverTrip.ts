@@ -68,6 +68,7 @@ export function useConfirmDelivery() {
       qc.invalidateQueries({ queryKey: ['tripRestaurants'] })
       qc.invalidateQueries({ queryKey: ['trips'] })
       qc.invalidateQueries({ queryKey: ['driverTrip'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }

@@ -16,7 +16,10 @@ export function useCreatePurchase() {
       const totalCost = (Number(data.quantityKg) || 0) * (Number(data.pricePerKg) || 0)
       return purchasesTable.create(cleanData({ ...data, totalCost }))
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['purchases'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['purchases'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+    },
   })
 }
 
@@ -24,6 +27,9 @@ export function useDeletePurchase() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => purchasesTable.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['purchases'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['purchases'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+    },
   })
 }

@@ -16,7 +16,7 @@ export function useDirectOrders(driverId?: string) {
 export function useAllDirectOrders() {
   return useQuery({
     queryKey: ['directOrders'],
-    queryFn: () => directOrdersTable.list<DirectOrder>({ orderBy: { createdAt: 'desc' } }),
+    queryFn: () => directOrdersTable.list<DirectOrder>({ select: 'id, driver_id, restaurant_name, chicken_type, quantity_kg, price_per_kg, actual_weight, status, payment_method, created_at', orderBy: { createdAt: 'desc' }, limit: 500 }),
   })
 }
 
@@ -27,6 +27,7 @@ export function useUpdateDirectOrder() {
       directOrdersTable.update(id, cleanData(data)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['directOrders'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }
@@ -37,6 +38,7 @@ export function useCreateDirectOrder() {
     mutationFn: (data: Record<string, unknown>) => directOrdersTable.create(cleanData(data)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['directOrders'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }
@@ -47,6 +49,7 @@ export function useDeleteDirectOrder() {
     mutationFn: (id: string) => directOrdersTable.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['directOrders'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }

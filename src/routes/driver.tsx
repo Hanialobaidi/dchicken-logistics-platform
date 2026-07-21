@@ -1201,44 +1201,40 @@ function DriverDashboard() {
                             </Button>
                           </>
                         )}
-                        {(() => {
-                          const inv = invoiceByOrderId.get(order.id)
-                          const invoiceData = inv ? {
-                            invoiceNumber: inv.invoiceNumber,
-                            date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
-                            restaurantName: inv.restaurantName,
-                            restaurantTaxNumber: inv.restaurantTaxNumber,
-                            driverName: inv.driverName,
-                            quantityKg: inv.quantityKg,
-                            pricePerKg: inv.pricePerKg,
-                            paymentMethod: inv.paymentMethod,
-                            paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-                            chickenType: inv.chickenType,
-                          } : (order.status !== 'pending' ? {
-                            invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
-                            date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
-                            restaurantName: order.restaurantName,
-                            restaurantTaxNumber: order.restaurantTaxNumber,
-                            driverName: effectiveDriverName,
-                            quantityKg: order.actualWeight,
-                            pricePerKg: order.pricePerKg,
-                            paymentMethod: order.paymentMethod,
-                            paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-                            chickenType: order.chickenType,
-                          } : null)
-                          if (!invoiceData) return null
-                          return (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="gap-1.5"
-                              onClick={() => setViewInvoiceData(invoiceData)}
-                            >
-                              <FileText className="h-3.5 w-3.5" />
-                              الفاتورة
-                            </Button>
-                          )
-                        })()}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5"
+                          onClick={() => {
+                            const inv = invoiceByOrderId.get(order.id)
+                            setViewInvoiceData(inv ? {
+                              invoiceNumber: inv.invoiceNumber,
+                              date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
+                              restaurantName: inv.restaurantName,
+                              restaurantTaxNumber: inv.restaurantTaxNumber,
+                              driverName: inv.driverName,
+                              quantityKg: inv.quantityKg,
+                              pricePerKg: inv.pricePerKg,
+                              paymentMethod: inv.paymentMethod,
+                              paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                              chickenType: inv.chickenType,
+                            } : {
+                              invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
+                              date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
+                              restaurantName: order.restaurantName,
+                              restaurantTaxNumber: order.restaurantTaxNumber,
+                              driverName: effectiveDriverName,
+                              quantityKg: order.actualWeight,
+                              pricePerKg: order.pricePerKg,
+                              paymentMethod: order.paymentMethod,
+                              paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                              chickenType: order.chickenType,
+                            })
+                          }}
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          الفاتورة
+                        </Button>
                       </div>
                     </div>
                   )

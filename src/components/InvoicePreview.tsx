@@ -71,24 +71,22 @@ export function InvoicePreview({
       const { jsPDF } = await import('jspdf')
 
       const el = printRef.current
-      const clone = el.cloneNode(true) as HTMLElement
-      clone.style.position = 'fixed'
-      clone.style.top = '0'
-      clone.style.left = '0'
-      clone.style.zIndex = '-1'
-      clone.style.opacity = '1'
-      clone.style.transform = 'none'
-      document.body.appendChild(clone)
 
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
+        logging: false,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
       })
 
-      document.body.removeChild(clone)
+      if (canvas.width === 0 || canvas.height === 0) throw new Error('Empty canvas')
 
-      const imgData = canvas.toDataURL('image/png')
+      const imgData = canvas.toDataURL('image/png', 1.0)
       const pdf = new jsPDF('p', 'mm', 'a4')
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
@@ -96,6 +94,7 @@ export function InvoicePreview({
       pdf.save(`invoice-${data.invoiceNumber}.pdf`)
     } catch (err) {
       console.error('PDF generation failed:', err)
+      window.print()
     } finally {
       setGenerating(false)
     }

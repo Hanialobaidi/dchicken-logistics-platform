@@ -1173,89 +1173,73 @@ function DriverDashboard() {
                       {order.notes && (
                         <p className="text-xs text-muted-foreground pr-10">{order.notes}</p>
                       )}
-                      {canModify && (
-                        <div className="flex gap-2 pr-10">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5"
-                            onClick={() => setEditingOrder(order)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            تعديل
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="gap-1.5"
-                            disabled={deleteOrder.isPending}
-                            onClick={async () => {
-                              if (!confirm('هل أنت متأكد من إلغاء هذه الطلبية؟')) return
-                              await deleteOrder.mutateAsync(order.id)
-                              toast.success('تم إلغاء الطلبية')
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            إلغاء
-                          </Button>
-                        </div>
-                      )}
-                      {(() => {
-                        const inv = invoiceByOrderId.get(order.id)
-                        if (inv) {
+                      <div className="flex gap-2 pr-10 flex-wrap">
+                        {canModify && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5"
+                              onClick={() => setEditingOrder(order)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              تعديل
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="gap-1.5"
+                              disabled={deleteOrder.isPending}
+                              onClick={async () => {
+                                if (!confirm('هل أنت متأكد من إلغاء هذه الطلبية؟')) return
+                                await deleteOrder.mutateAsync(order.id)
+                                toast.success('تم إلغاء الطلبية')
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              إلغاء
+                            </Button>
+                          </>
+                        )}
+                        {(() => {
+                          const inv = invoiceByOrderId.get(order.id)
+                          const invoiceData = inv ? {
+                            invoiceNumber: inv.invoiceNumber,
+                            date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
+                            restaurantName: inv.restaurantName,
+                            restaurantTaxNumber: inv.restaurantTaxNumber,
+                            driverName: inv.driverName,
+                            quantityKg: inv.quantityKg,
+                            pricePerKg: inv.pricePerKg,
+                            paymentMethod: inv.paymentMethod,
+                            paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                            chickenType: inv.chickenType,
+                          } : (order.status !== 'pending' ? {
+                            invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
+                            date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
+                            restaurantName: order.restaurantName,
+                            restaurantTaxNumber: order.restaurantTaxNumber,
+                            driverName: effectiveDriverName,
+                            quantityKg: order.actualWeight,
+                            pricePerKg: order.pricePerKg,
+                            paymentMethod: order.paymentMethod,
+                            paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                            chickenType: order.chickenType,
+                          } : null)
+                          if (!invoiceData) return null
                           return (
-                            <div className="pr-10">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1.5"
-                                onClick={() => setViewInvoiceData({
-                                  invoiceNumber: inv.invoiceNumber,
-                                  date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
-                                  restaurantName: inv.restaurantName,
-                                  restaurantTaxNumber: inv.restaurantTaxNumber,
-                                  driverName: inv.driverName,
-                                  quantityKg: inv.quantityKg,
-                                  pricePerKg: inv.pricePerKg,
-                                  paymentMethod: inv.paymentMethod,
-                                  paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-                                  chickenType: inv.chickenType,
-                                })}
-                              >
-                                <FileText className="h-3.5 w-3.5" />
-                                الفاتورة
-                              </Button>
-                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5"
+                              onClick={() => setViewInvoiceData(invoiceData)}
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              الفاتورة
+                            </Button>
                           )
-                        }
-                        if (order.status !== 'pending') {
-                          return (
-                            <div className="pr-10">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1.5"
-                                onClick={() => setViewInvoiceData({
-                                  invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
-                                  date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
-                                  restaurantName: order.restaurantName,
-                                  restaurantTaxNumber: order.restaurantTaxNumber,
-                                  driverName: effectiveDriverName,
-                                  quantityKg: order.actualWeight,
-                                  pricePerKg: order.pricePerKg,
-                                  paymentMethod: order.paymentMethod,
-                                  paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-                                  chickenType: order.chickenType,
-                                })}
-                              >
-                                <FileText className="h-3.5 w-3.5" />
-                                الفاتورة
-                              </Button>
-                            </div>
-                          )
-                        }
-                        return null
-                      })()}
+                        })()}
+                      </div>
                     </div>
                   )
                 })}

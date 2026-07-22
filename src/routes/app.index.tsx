@@ -133,16 +133,28 @@ function DashboardHome() {
           </CardContent>
         </Card>
         <Card className={inventoryIsLow ? 'border-red-300 bg-red-50/30' : ''}>
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${inventoryIsLow ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-              <Warehouse className="h-5 w-5" />
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${inventoryIsLow ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                <Warehouse className="h-5 w-5" />
+              </div>
+              <div>
+                <p className={`text-xl font-bold ${inventoryIsLow ? 'text-red-600' : ''}`}>
+                  {formatNum(inventory.availableKg)} كجم
+                </p>
+                <p className="text-xs text-muted-foreground">المخزون المتوفر</p>
+              </div>
             </div>
-            <div>
-              <p className={`text-xl font-bold ${inventoryIsLow ? 'text-red-600' : ''}`}>
-                {formatNum(inventory.availableKg)} كجم
-              </p>
-              <p className="text-xs text-muted-foreground">المخزون المتوفر</p>
-            </div>
+            {inventory.byType.length > 1 && (
+              <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2">
+                {inventory.byType.map((t) => (
+                  <div key={t.type} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground truncate">{t.type}</span>
+                    <span className="font-semibold tabular-nums">{formatNum(t.availableKg)} كجم</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -1191,11 +1191,12 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
                 <p className="text-2xl font-bold">{formatNum(inventory.availableKg)} كجم</p>
                 <p className="text-sm font-semibold">المخزون المتوفر</p>
                 {inventory.byType.length > 1 && (
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                  <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
                     {inventory.byType.map((t) => (
-                      <span key={t.type}>
-                        {t.type}: {formatNum(t.availableKg)} كجم
-                      </span>
+                      <div key={t.type} className="flex items-center justify-between">
+                        <span className="truncate">{t.type}</span>
+                        <span className="font-semibold tabular-nums">{formatNum(t.availableKg)} كجم</span>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -1538,11 +1539,12 @@ function DriverDashboard() {
             )}
           </div>
           {inventory.byType.length > 1 && (
-            <div className="mt-2 pt-2 border-t border-current/10 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            <div className="mt-2 pt-2 border-t grid grid-cols-2 gap-1.5">
               {inventory.byType.map((t) => (
-                <span key={t.type}>
-                  {t.type}: {formatNum(t.availableKg)} كجم
-                </span>
+                <div key={t.type} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground truncate">{t.type}</span>
+                  <span className="font-semibold tabular-nums">{formatNum(t.availableKg)} كجم</span>
+                </div>
               ))}
             </div>
           )}

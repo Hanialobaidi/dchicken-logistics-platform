@@ -13,8 +13,8 @@ import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as DriverDeliveryRouteImport } from './routes/driver.delivery'
 import { Route as DriverReportRouteImport } from './routes/driver.report'
+import { Route as DriverDeliveryRouteImport } from './routes/driver.delivery'
 import { Route as AppRestaurantsRouteImport } from './routes/app.restaurants'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppPurchasesRouteImport } from './routes/app.purchases'
@@ -41,14 +41,14 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const DriverDeliveryRoute = DriverDeliveryRouteImport.update({
-  id: '/delivery',
-  path: '/delivery',
-  getParentRoute: () => DriverRoute,
-} as any)
 const DriverReportRoute = DriverReportRouteImport.update({
   id: '/report',
   path: '/report',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverDeliveryRoute = DriverDeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
   getParentRoute: () => DriverRoute,
 } as any)
 const AppRestaurantsRoute = AppRestaurantsRouteImport.update({
@@ -193,18 +193,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/driver/delivery': {
-      id: '/driver/delivery'
-      path: '/delivery'
-      fullPath: '/driver/delivery'
-      preLoaderRoute: typeof DriverDeliveryRouteImport
-      parentRoute: typeof DriverRoute
-    }
     '/driver/report': {
       id: '/driver/report'
       path: '/report'
       fullPath: '/driver/report'
       preLoaderRoute: typeof DriverReportRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/delivery': {
+      id: '/driver/delivery'
+      path: '/delivery'
+      fullPath: '/driver/delivery'
+      preLoaderRoute: typeof DriverDeliveryRouteImport
       parentRoute: typeof DriverRoute
     }
     '/app/restaurants': {

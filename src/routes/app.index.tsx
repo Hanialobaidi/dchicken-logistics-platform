@@ -146,10 +146,10 @@ function DashboardHome() {
               </div>
             </div>
             {inventory.byType.length > 1 && (
-              <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2">
+              <div className="mt-3 pt-3 border-t space-y-1">
                 {inventory.byType.map((t) => (
                   <div key={t.type} className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground truncate">{t.type}</span>
+                    <span className="text-muted-foreground">{t.type}</span>
                     <span className="font-semibold tabular-nums">{formatNum(t.availableKg)} كجم</span>
                   </div>
                 ))}

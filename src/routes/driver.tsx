@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -1109,6 +1109,7 @@ function EditOrderDialog({
 
 /* ──── DriverDashboard ──── */
 function DriverDashboard() {
+  const navigate = useNavigate()
   const { role, isLoading: authLoading } = useAuth()
   const { data: drivers = [] } = useDrivers(role === 'admin')
   const { theme, toggleTheme } = useTheme()
@@ -1217,11 +1218,9 @@ function DriverDashboard() {
             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={toggleTheme}>
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Link to="/driver/report">
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" title="تقرير اليوم">
-                <BarChart3 className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" title="تقرير اليوم" onClick={() => navigate({ to: '/driver/report' })}>
+              <BarChart3 className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-9">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline text-xs">{userName}</span>

@@ -33,6 +33,8 @@ import {
   Pie,
   Cell,
 } from 'recharts'
+import { PullToRefresh } from '@/components/PullToRefresh'
+import { useRefreshAll } from '@/hooks/useRefreshAll'
 
 const PIE_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
 
@@ -43,6 +45,7 @@ export const Route = createFileRoute('/app/analytics')({
 })
 
 function AnalyticsPage() {
+  const refreshAll = useRefreshAll()
   const { data: purchases = [], isLoading: purchasesLoading } = usePurchases()
   const { data: directOrders = [], isLoading: ordersLoading } = useDirectOrders()
   const { data: trips = [], isLoading: tripsLoading } = useTrips()
@@ -124,6 +127,7 @@ function AnalyticsPage() {
   const hasData = purchases.length > 0 || allDelivered.length > 0 || directOrders.length > 0
 
   return (
+    <PullToRefresh onRefresh={refreshAll}>
     <div dir="rtl" className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex flex-col gap-1">
@@ -374,6 +378,7 @@ function AnalyticsPage() {
         </>
       )}
     </div>
+    </PullToRefresh>
   )
 }
 

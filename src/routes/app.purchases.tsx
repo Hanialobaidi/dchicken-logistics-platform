@@ -50,6 +50,8 @@ import { CHICKEN_TYPES } from '@/types'
 import type { Purchase } from '@/types'
 import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
 import { SearchInput } from '@/components/SearchInput'
+import { PullToRefresh } from '@/components/PullToRefresh'
+import { useRefreshAll } from '@/hooks/useRefreshAll'
 
 export const Route = createFileRoute('/app/purchases')({
   ssr: false,
@@ -58,6 +60,7 @@ export const Route = createFileRoute('/app/purchases')({
 })
 
 function PurchasesPage() {
+  const refreshAll = useRefreshAll()
   const { data: purchases = [], isLoading } = usePurchases()
   const inventory = useInventory()
   const createPurchase = useCreatePurchase()
@@ -164,6 +167,7 @@ function PurchasesPage() {
   const inventoryIsLow = inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
 
   return (
+    <PullToRefresh onRefresh={refreshAll}>
     <div dir="rtl" className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -511,6 +515,7 @@ function PurchasesPage() {
       </Dialog>
       <ScrollToTop />
     </div>
+    </PullToRefresh>
   )
 }
 

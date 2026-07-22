@@ -27,6 +27,8 @@ import { Store, Plus, Trash2, MapPin, Phone, Hash, AlertTriangle } from 'lucide-
 import { useState, useMemo } from 'react'
 import type { Restaurant } from '@/types'
 import { SearchInput } from '@/components/SearchInput'
+import { PullToRefresh } from '@/components/PullToRefresh'
+import { useRefreshAll } from '@/hooks/useRefreshAll'
 
 export const Route = createFileRoute('/app/restaurants')({
   ssr: false,
@@ -35,6 +37,7 @@ export const Route = createFileRoute('/app/restaurants')({
 })
 
 function RestaurantsPage() {
+  const refreshAll = useRefreshAll()
   const { data: restaurants = [], isLoading } = useRestaurants()
   const createRestaurant = useCreateRestaurant()
   const deleteRestaurant = useDeleteRestaurant()
@@ -107,6 +110,7 @@ function RestaurantsPage() {
   }
 
   return (
+    <PullToRefresh onRefresh={refreshAll}>
     <div dir="rtl" className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -306,6 +310,7 @@ function RestaurantsPage() {
       </Dialog>
       <ScrollToTop />
     </div>
+    </PullToRefresh>
   )
 }
 

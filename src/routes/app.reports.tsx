@@ -32,6 +32,8 @@ import {
 } from 'lucide-react'
 import { useState, useMemo, useCallback } from 'react'
 import { formatNum, formatPriceFull, formatDate } from '@/lib/utils'
+import { PullToRefresh } from '@/components/PullToRefresh'
+import { useRefreshAll } from '@/hooks/useRefreshAll'
 
 /* ──── Types ──── */
 type OperationType = 'طلبية مباشرة' | 'مشتريات'
@@ -93,6 +95,7 @@ function downloadCSV(csv: string, filename: string) {
 
 /* ──── Reports Page ──── */
 function ReportsPage() {
+  const refreshAll = useRefreshAll()
   const { data: directOrders = [] } = useDirectOrders()
   const { data: purchases = [] } = usePurchases()
   const { data: invoices = [] } = useInvoices()
@@ -229,6 +232,7 @@ function ReportsPage() {
   }, [typeFilter])
 
   return (
+    <PullToRefresh onRefresh={refreshAll}>
     <div dir="rtl" className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -429,6 +433,7 @@ function ReportsPage() {
       </Card>
       <ScrollToTop />
     </div>
+    </PullToRefresh>
   )
 }
 

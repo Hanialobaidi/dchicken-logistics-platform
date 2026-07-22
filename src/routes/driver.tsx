@@ -37,7 +37,9 @@ import { directOrdersTable, invoicesTable } from '@/lib/db'
 import { clearDriverSession } from '@/hooks/useDrivers'
 import { InvoicePreview, computeTaxFields } from '@/components/InvoicePreview'
 import { ScrollToTop } from '@/components/ScrollToTop'
+import { PullToRefresh } from '@/components/PullToRefresh'
 import type { InvoiceData } from '@/components/InvoicePreview'
+import { useRefreshAll } from '@/hooks/useRefreshAll'
 import { CHICKEN_TYPES } from '@/types'
 import type { DirectOrder, Invoice } from '@/types'
 import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
@@ -1446,9 +1448,11 @@ function DriverDashboard() {
   }, [role])
 
   const hasContent = !!trip || filteredDirectOrders.length > 0
+  const refreshAll = useRefreshAll()
 
   return (
     <>
+    <PullToRefresh onRefresh={refreshAll}>
     <div dir="rtl" className="min-h-dvh bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -1711,6 +1715,7 @@ function DriverDashboard() {
 
       <ScrollToTop />
     </div>
+    </PullToRefresh>
 
       {/* Overlays — rendered outside dashboard wrapper for clean printing */}
       {showReport && (

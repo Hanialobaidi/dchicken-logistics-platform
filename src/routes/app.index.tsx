@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatNum, formatPrice } from '@/lib/utils'
+import { PullToRefresh } from '@/components/PullToRefresh'
+import { useRefreshAll } from '@/hooks/useRefreshAll'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -35,6 +37,7 @@ function DashboardHome() {
   const inventory = useInventory()
   const updateDirectOrder = useUpdateDirectOrder()
   useRealtimeOrders(true)
+  const refreshAll = useRefreshAll()
 
   const allDirectOrders = inventory.allDirectOrders ?? []
   const restaurantCount = restaurants.length
@@ -60,6 +63,7 @@ function DashboardHome() {
   }
 
   return (
+    <PullToRefresh onRefresh={refreshAll}>
     <div dir="rtl" className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       {/* Page header */}
       <div className="flex flex-col gap-1">
@@ -248,6 +252,7 @@ function DashboardHome() {
         </Link>
       </div>
     </div>
+    </PullToRefresh>
   )
 }
 

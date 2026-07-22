@@ -163,22 +163,35 @@ function DashboardHome() {
                 key={order.id}
                 className="flex flex-col gap-2 rounded-lg border bg-background p-4"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-sm">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-sm shrink-0">
                       <Truck className="h-4 w-4 text-amber-600" />
                     </span>
                     <div>
                       <p className="text-sm font-semibold">{order.restaurantName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {order.driverName} · {order.actualWeight} كجم · {order.totalPrice > 0 ? `${order.totalPrice.toFixed(2)} ر.س` : ''}
-                        {order.chickenType && <span className="mr-1">· {order.chickenType}</span>}
-                      </p>
+                      <div className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
+                        <span>{order.driverName}</span>
+                        <span>·</span>
+                        <span>{order.actualWeight} كجم</span>
+                        {order.totalPrice > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>{formatPrice(order.totalPrice)}</span>
+                          </>
+                        )}
+                        {order.chickenType && (
+                          <>
+                            <span>·</span>
+                            <span>{order.chickenType}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <Badge variant="secondary">قيد الانتظار</Badge>
+                  <Badge variant="secondary" className="shrink-0">قيد الانتظار</Badge>
                 </div>
-                <div className="flex gap-2 pr-10">
+                <div className="flex gap-2">
                   <Button
                     size="sm"
                     className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"

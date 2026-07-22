@@ -132,26 +132,19 @@ function AdminSidebar() {
               <img src="/icon-192.png" alt="DChicken" className="h-full w-full object-contain" />
             </div>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={toggle}
-              >
-                <PanelLeft
-                  className={cn(
-                    'h-4 w-4 transition-transform duration-200',
-                    collapsed && 'rotate-180',
-                  )}
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {collapsed ? 'توسيع القائمة' : 'طي القائمة'}
-            </TooltipContent>
-          </Tooltip>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={toggle}
+          >
+            <PanelLeft
+              className={cn(
+                'h-4 w-4 transition-transform duration-200',
+                collapsed && 'rotate-180',
+              )}
+            />
+          </Button>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

@@ -10,11 +10,12 @@
  * the rest. Mobile: the sidebar is hidden and opens in a Sheet drawer via the
  * hamburger button in the mobile header. Customize freely — this is your code.
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { useRouterState } from '@tanstack/react-router'
 
 interface ShellProps {
   /** Sidebar content — e.g. <AppSidebarShell /> or your own nav */
@@ -26,6 +27,11 @@ interface ShellProps {
 
 export function Shell({ sidebar, appName = 'App', children }: ShellProps) {
   const [open, setOpen] = useState(false)
+  const routerState = useRouterState()
+
+  useEffect(() => {
+    setOpen(false)
+  }, [routerState.location.pathname])
 
   return (
     <div className="flex min-h-dvh">
@@ -35,7 +41,7 @@ export function Shell({ sidebar, appName = 'App', children }: ShellProps) {
 
       {/* Mobile sidebar — Sheet drawer opened by the hamburger below. */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="right" className="w-64 p-0">
           {sidebar}
         </SheetContent>
       </Sheet>

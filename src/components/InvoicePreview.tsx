@@ -68,7 +68,7 @@ export function InvoicePreview({
     <>
       <div className="fixed inset-0 z-[9998] bg-black/50 print:hidden" onClick={onClose} />
 
-      <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/50 print:bg-transparent print:static">
+      <div data-invoice-preview className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/50 print:bg-transparent print:static">
         <div className="relative my-4 w-full max-w-[210mm] print:max-w-none print:my-0">
           <div className="sticky top-0 z-10 flex items-center justify-end gap-2 p-2 print:hidden">
             <Button

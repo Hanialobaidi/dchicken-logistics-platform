@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -29,7 +29,7 @@ import { useDriverTrip } from '@/hooks/useDriverTrip'
 import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
 import { useCreateDirectOrder, useUpdateDirectOrder, useDeleteDirectOrder } from '@/hooks/useDirectOrders'
 import { useRestaurants } from '@/hooks/useRestaurants'
-import { useCreateInvoice } from '@/hooks/useInventory'
+import { useCreateInvoice, useInventory } from '@/hooks/useInventory'
 import { useTheme } from '@/hooks/useTheme'
 import { Moon, Sun } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -65,6 +65,8 @@ import {
   ArrowUp,
   Pencil,
   Trash2,
+  BarChart3,
+  Warehouse,
 } from 'lucide-react'
 import { useCallback, useState, useRef, useEffect, useMemo, type ChangeEvent } from 'react'
 
@@ -1131,6 +1133,7 @@ function DriverDashboard() {
 
   const { trip, isLoading: tripLoading } = useDriverTrip(effectiveDriverId)
   const stops = trip?.restaurants ?? []
+  const inventory = useInventory()
 
   const { data: directOrders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ['directOrders', { driverId: effectiveDriverId }],
@@ -1214,6 +1217,11 @@ function DriverDashboard() {
             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={toggleTheme}>
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
+            <Link to="/driver/report">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" title="تقرير اليوم">
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-9">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline text-xs">{userName}</span>
@@ -1245,6 +1253,34 @@ function DriverDashboard() {
             </Select>
           </div>
         )}
+
+        {/* Inventory indicator */}
+        <div className={`flex items-center gap-3 rounded-xl border p-3 ${
+          inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
+            ? 'border-red-300 bg-red-50/50'
+            : 'border-emerald-200 bg-emerald-50/50'
+        }`}>
+          <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+            inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
+              ? 'bg-red-500/10 text-red-500'
+              : 'bg-emerald-500/10 text-emerald-600'
+          }`}>
+            <Warehouse className="h-4 w-4" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">المخزون المتوفر</p>
+            <p className={`text-base font-bold ${
+              inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
+                ? 'text-red-600'
+                : 'text-emerald-600'
+            }`}>
+              {inventory.availableKg.toLocaleString('ar-SA')} كجم
+            </p>
+          </div>
+          {inventory.availableKg < 100 && inventory.totalPurchasedKg > 0 && (
+            <span className="text-xs font-medium text-red-600">منخفض</span>
+          )}
+        </div>
 
         {isLoadingData ? (
           <div className="space-y-4 animate-pulse">

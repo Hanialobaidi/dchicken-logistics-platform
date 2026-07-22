@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as DriverDeliveryRouteImport } from './routes/driver.delivery'
+import { Route as DriverReportRouteImport } from './routes/driver.report'
 import { Route as AppRestaurantsRouteImport } from './routes/app.restaurants'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppPurchasesRouteImport } from './routes/app.purchases'
@@ -43,6 +44,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const DriverDeliveryRoute = DriverDeliveryRouteImport.update({
   id: '/delivery',
   path: '/delivery',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverReportRoute = DriverReportRouteImport.update({
+  id: '/report',
+  path: '/report',
   getParentRoute: () => DriverRoute,
 } as any)
 const AppRestaurantsRoute = AppRestaurantsRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/app/reports': typeof AppReportsRoute
   '/app/restaurants': typeof AppRestaurantsRoute
   '/driver/delivery': typeof DriverDeliveryRoute
+  '/driver/report': typeof DriverReportRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/app/reports': typeof AppReportsRoute
   '/app/restaurants': typeof AppRestaurantsRoute
   '/driver/delivery': typeof DriverDeliveryRoute
+  '/driver/report': typeof DriverReportRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/app/reports': typeof AppReportsRoute
   '/app/restaurants': typeof AppRestaurantsRoute
   '/driver/delivery': typeof DriverDeliveryRoute
+  '/driver/report': typeof DriverReportRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/restaurants'
     | '/driver/delivery'
+    | '/driver/report'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/restaurants'
     | '/driver/delivery'
+    | '/driver/report'
     | '/app'
   id:
     | '__root__'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/restaurants'
     | '/driver/delivery'
+    | '/driver/report'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -186,6 +198,13 @@ declare module '@tanstack/react-router' {
       path: '/delivery'
       fullPath: '/driver/delivery'
       preLoaderRoute: typeof DriverDeliveryRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/report': {
+      id: '/driver/report'
+      path: '/report'
+      fullPath: '/driver/report'
+      preLoaderRoute: typeof DriverReportRouteImport
       parentRoute: typeof DriverRoute
     }
     '/app/restaurants': {
@@ -248,10 +267,12 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface DriverRouteChildren {
   DriverDeliveryRoute: typeof DriverDeliveryRoute
+  DriverReportRoute: typeof DriverReportRoute
 }
 
 const DriverRouteChildren: DriverRouteChildren = {
   DriverDeliveryRoute: DriverDeliveryRoute,
+  DriverReportRoute: DriverReportRoute,
 }
 
 const DriverRouteWithChildren =

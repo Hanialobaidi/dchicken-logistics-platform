@@ -1141,7 +1141,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
   const handlePrint = () => window.print()
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-50 min-h-dvh bg-background overflow-y-auto">
+    <div dir="rtl" data-print-report className="fixed inset-0 z-50 min-h-dvh bg-background overflow-y-auto">
       {/* Header */}
       <div className="no-print sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 h-14">
@@ -1432,6 +1432,7 @@ function DriverDashboard() {
   const hasContent = !!trip || filteredDirectOrders.length > 0
 
   return (
+    <>
     <div dir="rtl" className="min-h-dvh bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -1697,8 +1698,9 @@ function DriverDashboard() {
       )}
 
       <ScrollToTop />
+    </div>
 
-      {/* Report overlay */}
+      {/* Report overlay — rendered outside dashboard wrapper for clean printing */}
       {showReport && (
         <ReportOverlay
           driverId={effectiveDriverId}
@@ -1706,7 +1708,7 @@ function DriverDashboard() {
           onClose={() => setShowReport(false)}
         />
       )}
-    </div>
+    </>
   )
 }
 

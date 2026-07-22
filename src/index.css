@@ -206,3 +206,20 @@
     text-shadow: none !important;
   }
 }
+
+/* When printing the report overlay, hide everything else */
+@media print {
+  body > *:not([data-print-report]) {
+    display: none !important;
+  }
+  [data-print-report] {
+    position: static !important;
+    inset: auto !important;
+    z-index: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  [data-print-report] > .no-print {
+    display: none !important;
+  }
+}

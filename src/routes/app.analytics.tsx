@@ -19,6 +19,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
+import { formatNum, formatPrice } from '@/lib/utils'
 import type { TripRestaurant } from '@/types'
 import {
   BarChart,
@@ -32,12 +33,6 @@ import {
   Pie,
   Cell,
 } from 'recharts'
-
-const CURRENCY_FORMATTER = new Intl.NumberFormat('ar-SA', {
-  style: 'currency',
-  currency: 'SAR',
-  maximumFractionDigits: 0,
-})
 
 const PIE_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
 
@@ -169,25 +164,25 @@ function AnalyticsPage() {
             <KpiCard
               icon={<TrendingUp className="h-5 w-5" />}
               label="إجمالي المبيعات"
-              value={CURRENCY_FORMATTER.format(totalSales)}
+              value={formatPrice(totalSales)}
               color="blue"
             />
             <KpiCard
               icon={<ShoppingCart className="h-5 w-5" />}
               label="إجمالي المشتريات"
-              value={CURRENCY_FORMATTER.format(totalPurchases)}
+              value={formatPrice(totalPurchases)}
               color="amber"
             />
             <KpiCard
               icon={<PiggyBank className="h-5 w-5" />}
               label="صافي الأرباح"
-              value={CURRENCY_FORMATTER.format(netProfit)}
+              value={formatPrice(netProfit)}
               color={netProfit >= 0 ? 'green' : 'red'}
             />
             <KpiCard
               icon={<Warehouse className="h-5 w-5" />}
               label="المخزون المتوفر"
-              value={`${inventory.availableKg.toLocaleString('ar-SA')} كجم`}
+              value={`${formatNum(inventory.availableKg)} كجم`}
               color={inventory.availableKg < 100 && inventory.totalPurchasedKg > 0 ? 'red' : 'purple'}
             />
           </div>
@@ -200,7 +195,7 @@ function AnalyticsPage() {
                 <div>
                   <p className="text-sm font-medium text-amber-700 dark:text-amber-400">تنبيه: المخزون منخفض</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    المتوفر: {inventory.availableKg.toLocaleString('ar-SA')} كجم — يرجى التخطيط لعملية شراء جديدة
+                    المتوفر: {formatNum(inventory.availableKg)} كجم — يرجى التخطيط لعملية شراء جديدة
                   </p>
                 </div>
               </CardContent>
@@ -216,7 +211,7 @@ function AnalyticsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">إجمالي المشتريات</p>
-                  <p className="text-base font-bold">{inventory.totalPurchasedKg.toLocaleString('ar-SA')} كجم</p>
+                  <p className="text-base font-bold">{formatNum(inventory.totalPurchasedKg)} كجم</p>
                 </div>
               </CardContent>
             </Card>
@@ -227,7 +222,7 @@ function AnalyticsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">إجمالي المبيعات</p>
-                  <p className="text-base font-bold">{inventory.totalSoldKg.toLocaleString('ar-SA')} كجم</p>
+                  <p className="text-base font-bold">{formatNum(inventory.totalSoldKg)} كجم</p>
                 </div>
               </CardContent>
             </Card>
@@ -238,7 +233,7 @@ function AnalyticsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">المخزون المتبقي</p>
-                  <p className="text-base font-bold">{inventory.availableKg.toLocaleString('ar-SA')} كجم</p>
+                  <p className="text-base font-bold">{formatNum(inventory.availableKg)} كجم</p>
                 </div>
               </CardContent>
             </Card>
@@ -261,7 +256,7 @@ function AnalyticsPage() {
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
                     <Tooltip
-                      formatter={(value: number) => [CURRENCY_FORMATTER.format(value), '']}
+                      formatter={(value: number) => [formatPrice(value), '']}
                       contentStyle={{ direction: 'rtl', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
                     />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={80}>
@@ -305,7 +300,7 @@ function AnalyticsPage() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number) => [CURRENCY_FORMATTER.format(value), '']}
+                        formatter={(value: number) => [formatPrice(value), '']}
                         contentStyle={{ direction: 'rtl', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
                       />
                     </PieChart>
@@ -335,7 +330,7 @@ function AnalyticsPage() {
                     <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={120} />
                     <Tooltip
-                      formatter={(value: number) => [CURRENCY_FORMATTER.format(value), '']}
+                      formatter={(value: number) => [formatPrice(value), '']}
                       contentStyle={{ direction: 'rtl', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
                     />
                     <Bar dataKey="cost" radius={[0, 6, 6, 0]} fill="var(--chart-3)" maxBarSize={32} />
@@ -356,15 +351,15 @@ function AnalyticsPage() {
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="text-center p-3 rounded-lg bg-muted/30">
-                  <p className="text-2xl font-bold">{completedCount.toLocaleString('ar-SA')}</p>
+                  <p className="text-2xl font-bold">{formatNum(completedCount)}</p>
                   <p className="text-xs text-muted-foreground">رحلات مكتملة</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-muted/30">
-                  <p className="text-2xl font-bold">{directOrders.length.toLocaleString('ar-SA')}</p>
+                  <p className="text-2xl font-bold">{formatNum(directOrders.length)}</p>
                   <p className="text-xs text-muted-foreground">طلبيات مباشرة</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-muted/30">
-                  <p className="text-2xl font-bold">{purchases.length.toLocaleString('ar-SA')}</p>
+                  <p className="text-2xl font-bold">{formatNum(purchases.length)}</p>
                   <p className="text-xs text-muted-foreground">عمليات شراء</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-muted/30">

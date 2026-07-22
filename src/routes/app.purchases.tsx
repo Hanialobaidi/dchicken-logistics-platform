@@ -38,6 +38,7 @@ import {
   Warehouse,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
+import { formatNum, formatPrice } from '@/lib/utils'
 import {
   Select,
   SelectContent,
@@ -49,12 +50,6 @@ import { CHICKEN_TYPES } from '@/types'
 import type { Purchase } from '@/types'
 import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
 import { SearchInput } from '@/components/SearchInput'
-
-const CURRENCY_FORMATTER = new Intl.NumberFormat('ar-SA', {
-  style: 'currency',
-  currency: 'SAR',
-  maximumFractionDigits: 0,
-})
 
 export const Route = createFileRoute('/app/purchases')({
   ssr: false,
@@ -196,7 +191,7 @@ function PurchasesPage() {
               <ArrowDownCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xl font-bold">{inventory.totalPurchasedKg.toLocaleString('ar-SA')} كجم</p>
+              <p className="text-xl font-bold">{formatNum(inventory.totalPurchasedKg)} كجم</p>
               <p className="text-xs text-muted-foreground">إجمالي المشتريات</p>
             </div>
           </CardContent>
@@ -209,7 +204,7 @@ function PurchasesPage() {
               <ArrowUpCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xl font-bold">{inventory.totalSoldKg.toLocaleString('ar-SA')} كجم</p>
+              <p className="text-xl font-bold">{formatNum(inventory.totalSoldKg)} كجم</p>
               <p className="text-xs text-muted-foreground">إجمالي المبيعات</p>
             </div>
           </CardContent>
@@ -223,7 +218,7 @@ function PurchasesPage() {
             </div>
             <div>
               <p className={`text-xl font-bold ${inventoryIsLow ? 'text-red-600' : ''}`}>
-                {inventory.availableKg.toLocaleString('ar-SA')} كجم
+                {formatNum(inventory.availableKg)} كجم
               </p>
               <p className="text-xs text-muted-foreground">المخزون المتوفر</p>
             </div>
@@ -237,7 +232,7 @@ function PurchasesPage() {
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xl font-bold">{CURRENCY_FORMATTER.format(purchases.reduce((s, p) => s + (p.totalCost ?? 0), 0))}</p>
+              <p className="text-xl font-bold">{formatPrice(purchases.reduce((s, p) => s + (p.totalCost ?? 0), 0))}</p>
               <p className="text-xs text-muted-foreground">إجمالي تكلفة الشراء</p>
             </div>
           </CardContent>
@@ -343,13 +338,13 @@ function PurchasesPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {p.quantityKg.toLocaleString('ar-SA')} كجم
+                        {formatNum(p.quantityKg)} كجم
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {p.pricePerKg.toLocaleString('ar-SA')} ريال
+                        {formatNum(p.pricePerKg)} ريال
                       </TableCell>
                       <TableCell className="font-medium text-sm">
-                        {CURRENCY_FORMATTER.format(p.totalCost)}
+                        {formatPrice(p.totalCost)}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -472,11 +467,11 @@ function PurchasesPage() {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <p className="text-xs text-muted-foreground">التكلفة الإجمالية</p>
                 <p className="text-lg font-bold">
-                  {quantity.toLocaleString('ar-SA')} × {price.toLocaleString('ar-SA')} ={' '}
-                  {CURRENCY_FORMATTER.format(totalCostLive)}
+                  {formatNum(quantity)} × {formatNum(price)} ={' '}
+                  {formatPrice(totalCostLive)}
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">
-                  ستُضاف {quantity.toLocaleString('ar-SA')} كجم إلى المخزون المتوفر
+                  ستُضاف {formatNum(quantity)} كجم إلى المخزون المتوفر
                 </p>
               </div>
             )}

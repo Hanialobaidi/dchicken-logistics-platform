@@ -20,12 +20,7 @@ import {
   Truck,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
-
-const CURRENCY_FORMATTER = new Intl.NumberFormat('ar-SA', {
-  style: 'currency',
-  currency: 'SAR',
-  maximumFractionDigits: 0,
-})
+import { formatNum, formatPrice } from '@/lib/utils'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -85,7 +80,7 @@ function DashboardHome() {
             <div className="flex-1">
               <p className="text-sm font-semibold text-red-700">تنبيه: المخزون منخفض</p>
               <p className="text-xs text-red-600">
-                المخزون المتوفر ({inventory.availableKg.toLocaleString('ar-SA')} كجم) — يرجى إضافة مشتريات جديدة
+                المخزون المتوفر ({formatNum(inventory.availableKg)} كجم) — يرجى إضافة مشتريات جديدة
               </p>
             </div>
             <Link to="/app/purchases">
@@ -121,7 +116,7 @@ function DashboardHome() {
               <ArrowDownCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xl font-bold">{inventory.totalPurchasedKg.toLocaleString('ar-SA')} كجم</p>
+              <p className="text-xl font-bold">{formatNum(inventory.totalPurchasedKg)} كجم</p>
               <p className="text-xs text-muted-foreground">إجمالي المشتريات</p>
             </div>
           </CardContent>
@@ -132,7 +127,7 @@ function DashboardHome() {
               <ArrowUpCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xl font-bold">{inventory.totalSoldKg.toLocaleString('ar-SA')} كجم</p>
+              <p className="text-xl font-bold">{formatNum(inventory.totalSoldKg)} كجم</p>
               <p className="text-xs text-muted-foreground">إجمالي المبيعات</p>
             </div>
           </CardContent>
@@ -144,7 +139,7 @@ function DashboardHome() {
             </div>
             <div>
               <p className={`text-xl font-bold ${inventoryIsLow ? 'text-red-600' : ''}`}>
-                {inventory.availableKg.toLocaleString('ar-SA')} كجم
+                {formatNum(inventory.availableKg)} كجم
               </p>
               <p className="text-xs text-muted-foreground">المخزون المتوفر</p>
             </div>
@@ -302,7 +297,7 @@ function RecentDeliveries({ directOrders }: { directOrders: { id: string; driver
                   {d.totalPrice > 0 && (
                     <>
                       <span>·</span>
-                      <span>{CURRENCY_FORMATTER.format(d.totalPrice)}</span>
+                      <span>{formatPrice(d.totalPrice)}</span>
                     </>
                   )}
                   {d.chickenType && (

@@ -18,12 +18,7 @@ import {
   Weight,
 } from 'lucide-react'
 import type { DirectOrder } from '@/types'
-
-const CURRENCY = new Intl.NumberFormat('ar-SA', {
-  style: 'currency',
-  currency: 'SAR',
-  maximumFractionDigits: 0,
-})
+import { formatNum, formatPrice } from '@/lib/utils'
 
 export const Route = createFileRoute('/driver/report')({
   ssr: false,
@@ -136,7 +131,7 @@ function DriverReportPage() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">المخزون المتوفر</p>
-                <p className="text-2xl font-bold">{inventory.availableKg.toLocaleString('ar-SA')} كجم</p>
+                <p className="text-2xl font-bold">{formatNum(inventory.availableKg)} كجم</p>
               </div>
               {inventory.availableKg < 100 && inventory.totalPurchasedKg > 0 && (
                 <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">منخفض</span>
@@ -145,15 +140,15 @@ function DriverReportPage() {
             <div className="grid grid-cols-3 gap-2 mt-3 text-center">
               <div className="rounded-lg bg-muted p-2">
                 <p className="text-xs text-muted-foreground">المشتريات</p>
-                <p className="text-sm font-bold">{inventory.totalPurchasedKg.toLocaleString('ar-SA')} كجم</p>
+                <p className="text-sm font-bold">{formatNum(inventory.totalPurchasedKg)} كجم</p>
               </div>
               <div className="rounded-lg bg-muted p-2">
                 <p className="text-xs text-muted-foreground">المبيعات</p>
-                <p className="text-sm font-bold">{inventory.totalSoldKg.toLocaleString('ar-SA')} كجم</p>
+                <p className="text-sm font-bold">{formatNum(inventory.totalSoldKg)} كجم</p>
               </div>
               <div className={`rounded-lg p-2 ${inventory.availableKg < 100 ? 'bg-red-50' : 'bg-emerald-50'}`}>
                 <p className="text-xs text-muted-foreground">المتوفر</p>
-                <p className={`text-sm font-bold ${inventory.availableKg < 100 ? 'text-red-600' : 'text-emerald-600'}`}>{inventory.availableKg.toLocaleString('ar-SA')} كجم</p>
+                <p className={`text-sm font-bold ${inventory.availableKg < 100 ? 'text-red-600' : 'text-emerald-600'}`}>{formatNum(inventory.availableKg)} كجم</p>
               </div>
             </div>
           </CardContent>
@@ -189,7 +184,7 @@ function DriverReportPage() {
                             {stop.actualWeight != null ? `${stop.actualWeight} كجم` : `${stop.targetWeight} كجم (مستهدف)`}
                           </span>
                         </td>
-                        <td className="py-2">{CURRENCY.format(stop.totalPrice || 0)}</td>
+                        <td className="py-2">{formatPrice(stop.totalPrice || 0)}</td>
                         <td className="py-2">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             stop.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' :
@@ -205,8 +200,8 @@ function DriverReportPage() {
                   <tfoot>
                     <tr className="border-t-2 font-bold">
                       <td colSpan={2} className="py-2">الإجمالي</td>
-                      <td className="py-2">{tripTotalWeight.toLocaleString('ar-SA')} كجم</td>
-                      <td className="py-2">{CURRENCY.format(tripTotalPrice)}</td>
+                      <td className="py-2">{formatNum(tripTotalWeight)} كجم</td>
+                      <td className="py-2">{formatPrice(tripTotalPrice)}</td>
                       <td className="py-2 text-xs text-muted-foreground">
                         {tripDelivered.length} تم / {tripCancelled.length} ملغي / {tripPending.length} انتظار
                       </td>
@@ -249,7 +244,7 @@ function DriverReportPage() {
                             {order.actualWeight} كجم
                           </span>
                         </td>
-                        <td className="py-2">{CURRENCY.format(order.totalPrice || 0)}</td>
+                        <td className="py-2">{formatPrice(order.totalPrice || 0)}</td>
                         <td className="py-2 text-xs text-muted-foreground">
                           {order.paymentMethod === 'cash' ? 'نقدي' : order.paymentMethod === 'network' ? 'شبكة' : 'آجل'}
                         </td>
@@ -267,8 +262,8 @@ function DriverReportPage() {
                   <tfoot>
                     <tr className="border-t-2 font-bold">
                       <td colSpan={2} className="py-2">الإجمالي</td>
-                      <td className="py-2">{orderTotalWeight.toLocaleString('ar-SA')} كجم</td>
-                      <td className="py-2">{CURRENCY.format(orderTotalPrice)}</td>
+                      <td className="py-2">{formatNum(orderTotalWeight)} كجم</td>
+                      <td className="py-2">{formatPrice(orderTotalPrice)}</td>
                       <td colSpan={2} />
                     </tr>
                   </tfoot>
@@ -293,8 +288,8 @@ function DriverReportPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold">المجموع الكلي</span>
                 <div className="text-left">
-                  <p className="text-xl font-bold">{CURRENCY.format(grandTotalPrice)}</p>
-                  <p className="text-xs text-muted-foreground">{grandTotalWeight.toLocaleString('ar-SA')} كجم</p>
+                  <p className="text-xl font-bold">{formatPrice(grandTotalPrice)}</p>
+                  <p className="text-xs text-muted-foreground">{formatNum(grandTotalWeight)} كجم</p>
                 </div>
               </div>
             </CardContent>

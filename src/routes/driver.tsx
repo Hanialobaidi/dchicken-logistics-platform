@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import { cn, formatNum, formatPrice } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useDriverTrip } from '@/hooks/useDriverTrip'
 import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
@@ -71,12 +71,6 @@ import {
 import { useCallback, useState, useRef, useEffect, useMemo, type ChangeEvent } from 'react'
 
 type StopStatus = 'قيد الانتظار' | 'تم التسليم' | 'ملغي'
-
-const CURRENCY = new Intl.NumberFormat('ar-SA', {
-  style: 'currency',
-  currency: 'SAR',
-  maximumFractionDigits: 0,
-})
 
 const STATUS_CONFIG: Record<
   StopStatus,
@@ -1195,7 +1189,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">المخزون المتوفر</p>
-                <p className="text-2xl font-bold">{inventory.availableKg.toLocaleString('ar-SA')} كجم</p>
+                <p className="text-2xl font-bold">{formatNum(inventory.availableKg)} كجم</p>
               </div>
             </div>
           </CardContent>
@@ -1231,7 +1225,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
                             {stop.actualWeight != null ? `${stop.actualWeight} كجم` : `${stop.targetWeight} كجم (مستهدف)`}
                           </span>
                         </td>
-                        <td className="py-2">{CURRENCY.format(stop.totalPrice || 0)}</td>
+                        <td className="py-2">{formatPrice(stop.totalPrice || 0)}</td>
                         <td className="py-2">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             stop.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' :
@@ -1247,8 +1241,8 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
                   <tfoot>
                     <tr className="border-t-2 font-bold">
                       <td colSpan={2} className="py-2">الإجمالي</td>
-                      <td className="py-2">{tripTotalWeight.toLocaleString('ar-SA')} كجم</td>
-                      <td className="py-2">{CURRENCY.format(tripTotalPrice)}</td>
+                      <td className="py-2">{formatNum(tripTotalWeight)} كجم</td>
+                      <td className="py-2">{formatPrice(tripTotalPrice)}</td>
                       <td className="py-2 text-xs text-muted-foreground">
                         {tripDelivered.length} تم / {tripCancelled.length} ملغي / {tripPending.length} انتظار
                       </td>
@@ -1291,7 +1285,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
                             {order.actualWeight} كجم
                           </span>
                         </td>
-                        <td className="py-2">{CURRENCY.format(order.totalPrice || 0)}</td>
+                        <td className="py-2">{formatPrice(order.totalPrice || 0)}</td>
                         <td className="py-2 text-xs text-muted-foreground">
                           {order.paymentMethod === 'cash' ? 'نقدي' : order.paymentMethod === 'network' ? 'شبكة' : 'آجل'}
                         </td>
@@ -1309,8 +1303,8 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
                   <tfoot>
                     <tr className="border-t-2 font-bold">
                       <td colSpan={2} className="py-2">الإجمالي</td>
-                      <td className="py-2">{orderTotalWeight.toLocaleString('ar-SA')} كجم</td>
-                      <td className="py-2">{CURRENCY.format(orderTotalPrice)}</td>
+                      <td className="py-2">{formatNum(orderTotalWeight)} كجم</td>
+                      <td className="py-2">{formatPrice(orderTotalPrice)}</td>
                       <td colSpan={2} />
                     </tr>
                   </tfoot>
@@ -1335,8 +1329,8 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold">المجموع الكلي</span>
                 <div className="text-left">
-                  <p className="text-xl font-bold">{CURRENCY.format(grandTotalPrice)}</p>
-                  <p className="text-xs text-muted-foreground">{grandTotalWeight.toLocaleString('ar-SA')} كجم</p>
+                  <p className="text-xl font-bold">{formatPrice(grandTotalPrice)}</p>
+                  <p className="text-xs text-muted-foreground">{formatNum(grandTotalWeight)} كجم</p>
                 </div>
               </div>
             </CardContent>
@@ -1519,7 +1513,7 @@ function DriverDashboard() {
                 ? 'text-red-600'
                 : 'text-emerald-600'
             }`}>
-              {inventory.availableKg.toLocaleString('ar-SA')} كجم
+              {formatNum(inventory.availableKg)} كجم
             </p>
           </div>
           {inventory.availableKg < 100 && inventory.totalPurchasedKg > 0 && (

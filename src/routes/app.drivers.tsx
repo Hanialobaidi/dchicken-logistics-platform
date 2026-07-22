@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { useDrivers, useCreateDriver, useUpdateDriver, useDeleteDriver } from '@/hooks/useDrivers'
 import { Users, Plus, Trash2, Pencil, Phone, Car, Key, User } from 'lucide-react'
 import { useState, useMemo } from 'react'
+import { formatNum } from '@/lib/utils'
 import type { Driver } from '@/types'
 import { SearchInput } from '@/components/SearchInput'
 
@@ -230,7 +231,7 @@ function DriversPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {d.salary != null ? `${Number(d.salary).toLocaleString('ar-SA')} ر.س` : '—'}
+                      {d.salary != null ? `${formatNum(Number(d.salary))} ر.س` : '—'}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">

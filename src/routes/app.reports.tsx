@@ -31,6 +31,7 @@ import {
   ArrowUpCircle,
 } from 'lucide-react'
 import { useState, useMemo, useCallback } from 'react'
+import { formatNum, formatPriceFull } from '@/lib/utils'
 
 /* ──── Types ──── */
 type OperationType = 'طلبية مباشرة' | 'مشتريات'
@@ -64,8 +65,6 @@ const PAYMENT_LABELS: Record<string, string> = {
   network: 'شبكة',
   credit: 'آجل',
 }
-
-const CURRENCY = new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 2 })
 
 /* ──── CSV helpers ──── */
 function escapeCSV(value: unknown): string {
@@ -257,7 +256,7 @@ function ReportsPage() {
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">إجمالي المبيعات</p>
-              <p className="text-sm font-bold text-emerald-700">{CURRENCY.format(totalRevenue)}</p>
+              <p className="text-sm font-bold text-emerald-700">{formatPriceFull(totalRevenue)}</p>
             </div>
           </CardContent>
         </Card>
@@ -268,7 +267,7 @@ function ReportsPage() {
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">إجمالي المشتريات</p>
-              <p className="text-sm font-bold text-amber-700">{CURRENCY.format(totalPurchasesCost)}</p>
+              <p className="text-sm font-bold text-amber-700">{formatPriceFull(totalPurchasesCost)}</p>
             </div>
           </CardContent>
         </Card>
@@ -279,7 +278,7 @@ function ReportsPage() {
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">العمليات</p>
-              <p className="text-sm font-bold">{mergedData.length.toLocaleString('ar-SA')}</p>
+              <p className="text-sm font-bold">{formatNum(mergedData.length)}</p>
             </div>
           </CardContent>
         </Card>
@@ -290,7 +289,7 @@ function ReportsPage() {
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">الفواتير</p>
-              <p className="text-sm font-bold">{totalInvoices.toLocaleString('ar-SA')}</p>
+              <p className="text-sm font-bold">{formatNum(totalInvoices)}</p>
             </div>
           </CardContent>
         </Card>
@@ -414,7 +413,7 @@ function ReportsPage() {
                           {row.pricePerKg > 0 ? `${row.pricePerKg} ر.س` : '—'}
                         </TableCell>
                         <TableCell className="font-medium text-sm">
-                          {row.totalPrice > 0 ? CURRENCY.format(row.totalPrice) : '—'}
+                          {row.totalPrice > 0 ? formatPriceFull(row.totalPrice) : '—'}
                         </TableCell>
                         <TableCell>
                           <Badge variant={cfg.variant}>{cfg.label}</Badge>

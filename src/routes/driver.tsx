@@ -1362,6 +1362,12 @@ function DriverDashboard() {
   const updateOrder = useUpdateDirectOrder()
   const deleteOrder = useDeleteDirectOrder()
 
+  useEffect(() => {
+    const anyOpen = showReport || !!editInvoiceData || !!viewInvoiceData
+    document.body.style.overflow = anyOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [showReport, editInvoiceData, viewInvoiceData])
+
   const syncSession = typeof window !== 'undefined' ? getDriverSession() : null
 
   const effectiveDriverId = role === 'admin'

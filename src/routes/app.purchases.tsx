@@ -38,7 +38,7 @@ import {
   Warehouse,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
-import { formatNum, formatPrice } from '@/lib/utils'
+import { formatNum, formatPrice, formatDate } from '@/lib/utils'
 import {
   Select,
   SelectContent,
@@ -325,7 +325,7 @@ function PurchasesPage() {
                       <TableCell className="font-medium text-sm">
                         <span className="flex items-center gap-1.5">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {new Date(p.purchaseDate).toLocaleDateString('ar-SA')}
+                          {formatDate(p.purchaseDate)}
                         </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">

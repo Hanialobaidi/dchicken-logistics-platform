@@ -31,7 +31,7 @@ import {
   ArrowUpCircle,
 } from 'lucide-react'
 import { useState, useMemo, useCallback } from 'react'
-import { formatNum, formatPriceFull } from '@/lib/utils'
+import { formatNum, formatPriceFull, formatDate } from '@/lib/utils'
 
 /* ──── Types ──── */
 type OperationType = 'طلبية مباشرة' | 'مشتريات'
@@ -406,7 +406,7 @@ function ReportsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {row.date ? new Date(row.date + 'T00:00:00').toLocaleDateString('ar-SA') : '—'}
+                          {row.date ? formatDate(row.date) : '—'}
                         </TableCell>
                         <TableCell className="text-muted-foreground">{row.weight} كجم</TableCell>
                         <TableCell className="text-muted-foreground text-sm">

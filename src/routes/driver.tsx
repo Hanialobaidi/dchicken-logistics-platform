@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { cn, formatNum, formatPrice } from '@/lib/utils'
+import { cn, formatNum, formatPrice, formatDate, formatDateLong } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useDriverTrip } from '@/hooks/useDriverTrip'
 import { useDrivers, getDriverSession } from '@/hooks/useDrivers'
@@ -326,7 +326,7 @@ function DirectOrderDialog({
       // Show invoice preview immediately after DB commit
       setInvoiceData({
         invoiceNumber: invoiceNum,
-        date: new Date(orderDate).toLocaleDateString('ar-SA'),
+        date: formatDate(orderDate),
         restaurantName: name,
         restaurantTaxNumber,
         driverName,
@@ -756,7 +756,7 @@ function DirectOrderCard({
                 </>
               )}
               <Calendar className="h-3 w-3" />
-              {new Date(order.orderDate).toLocaleDateString('ar-SA')}
+              {formatDate(order.orderDate)}
             </p>
           </div>
         </div>
@@ -796,7 +796,7 @@ function DirectOrderCard({
             const inv = invoiceByOrderId.get(order.id)
             onViewInvoice(inv ? {
               invoiceNumber: inv.invoiceNumber,
-              date: new Date(inv.invoiceDate).toLocaleDateString('ar-SA'),
+              date: formatDate(inv.invoiceDate),
               restaurantName: inv.restaurantName,
               restaurantTaxNumber: inv.restaurantTaxNumber,
               driverName: inv.driverName,
@@ -807,7 +807,7 @@ function DirectOrderCard({
               chickenType: inv.chickenType,
             } : {
               invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
-              date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
+              date: formatDate(order.orderDate),
               restaurantName: order.restaurantName,
               restaurantTaxNumber: order.restaurantTaxNumber,
               driverName: effectiveDriverName,
@@ -956,7 +956,7 @@ function EditOrderDialog({
 
     onInvoiceIssued({
       invoiceNumber: invoiceNum,
-      date: new Date(order.orderDate).toLocaleDateString('ar-SA'),
+      date: formatDate(order.orderDate),
       restaurantName: order.restaurantName,
       restaurantTaxNumber: order.restaurantTaxNumber,
       driverName,
@@ -1166,7 +1166,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
           <h1 className="text-xl font-bold">آفاق الرغد للدواجن</h1>
           <p className="text-sm mt-1">تقرير التوصيلات اليومية</p>
           <div className="flex justify-between mt-2 text-sm">
-            <span>التاريخ: {new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>التاريخ: {formatDateLong(new Date())}</span>
             <span>السائق: {driverName}</span>
           </div>
         </div>
@@ -1174,7 +1174,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
         {/* Screen header */}
         <div className="print:hidden text-center space-y-1">
           <p className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {formatDateLong(new Date())}
             {' — '}
             {driverName}
           </p>
@@ -1339,7 +1339,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
 
         {/* Print footer */}
         <div className="hidden print:block text-center text-xs text-muted-foreground border-t pt-4 mt-8">
-          آفاق الرغد للدواجن — {new Date().toLocaleDateString('ar-SA')}
+          آفاق الرغد للدواجن — {formatDate(new Date())}
         </div>
       </div>
     </div>
@@ -1541,7 +1541,7 @@ function DriverDashboard() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  {new Date(trip.tripDate).toLocaleDateString('ar-SA')}
+                  {formatDate(trip.tripDate)}
                 </p>
                 <div className="flex items-center gap-4 text-sm">
                   <span className="flex items-center gap-1.5">

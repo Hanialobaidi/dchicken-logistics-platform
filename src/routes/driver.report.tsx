@@ -18,7 +18,7 @@ import {
   Weight,
 } from 'lucide-react'
 import type { DirectOrder } from '@/types'
-import { formatNum, formatPrice } from '@/lib/utils'
+import { formatNum, formatPrice, formatDate, formatDateLong } from '@/lib/utils'
 
 export const Route = createFileRoute('/driver/report')({
   ssr: false,
@@ -104,7 +104,7 @@ function DriverReportPage() {
           <h1 className="text-xl font-bold">آفاق الرغد للدواجن</h1>
           <p className="text-sm mt-1">تقرير التوصيلات اليومية</p>
           <div className="flex justify-between mt-2 text-sm">
-            <span>التاريخ: {new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>التاريخ: {formatDateLong(new Date())}</span>
             <span>السائق: {effectiveDriverName}</span>
           </div>
         </div>
@@ -116,7 +116,7 @@ function DriverReportPage() {
             تقرير التوصيلات اليومية
           </h1>
           <p className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {formatDateLong(new Date())}
             {' — '}
             {effectiveDriverName}
           </p>
@@ -298,7 +298,7 @@ function DriverReportPage() {
 
         {/* Print footer */}
         <div className="hidden print:block text-center text-xs text-muted-foreground border-t pt-4 mt-8">
-          آفاق الرغد للدواجن — {new Date().toLocaleDateString('ar-SA')}
+          آفاق الرغد للدواجن — {formatDate(new Date())}
         </div>
       </div>
 

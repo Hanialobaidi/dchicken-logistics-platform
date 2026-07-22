@@ -130,8 +130,17 @@ function DriverReportPage() {
                 <Warehouse className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold">المخزون المتوفر</p>
                 <p className="text-2xl font-bold">{formatNum(inventory.availableKg)} كجم</p>
+                <p className="text-sm font-semibold">المخزون المتوفر</p>
+                {inventory.byType.length > 1 && (
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                    {inventory.byType.map((t) => (
+                      <span key={t.type}>
+                        {t.type}: {formatNum(t.availableKg)} كجم
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               {inventory.availableKg < 100 && inventory.totalPurchasedKg > 0 && (
                 <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">منخفض</span>

@@ -1188,8 +1188,17 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
                 <Warehouse className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold">المخزون المتوفر</p>
                 <p className="text-2xl font-bold">{formatNum(inventory.availableKg)} كجم</p>
+                <p className="text-sm font-semibold">المخزون المتوفر</p>
+                {inventory.byType.length > 1 && (
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                    {inventory.byType.map((t) => (
+                      <span key={t.type}>
+                        {t.type}: {formatNum(t.availableKg)} كجم
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -1501,30 +1510,41 @@ function DriverDashboard() {
         )}
 
         {/* Inventory indicator */}
-        <div className={`flex items-center gap-3 rounded-xl border p-3 ${
+        <div className={`rounded-xl border p-3 ${
           inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
             ? 'border-red-300 bg-red-50/50'
             : 'border-emerald-200 bg-emerald-50/50'
         }`}>
-          <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-            inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
-              ? 'bg-red-500/10 text-red-500'
-              : 'bg-emerald-500/10 text-emerald-600'
-          }`}>
-            <Warehouse className="h-4 w-4" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">المخزون المتوفر</p>
-            <p className={`text-base font-bold ${
+          <div className="flex items-center gap-3">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
               inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
-                ? 'text-red-600'
-                : 'text-emerald-600'
+                ? 'bg-red-500/10 text-red-500'
+                : 'bg-emerald-500/10 text-emerald-600'
             }`}>
-              {formatNum(inventory.availableKg)} كجم
-            </p>
+              <Warehouse className="h-4 w-4" />
+            </div>
+            <div className="flex-1">
+              <p className={`text-lg font-bold ${
+                inventory.availableKg < 100 && inventory.totalPurchasedKg > 0
+                  ? 'text-red-600'
+                  : 'text-emerald-600'
+              }`}>
+                {formatNum(inventory.availableKg)} كجم
+              </p>
+              <p className="text-[10px] text-muted-foreground">المخزون المتوفر</p>
+            </div>
+            {inventory.availableKg < 100 && inventory.totalPurchasedKg > 0 && (
+              <span className="text-xs font-medium text-red-600">منخفض</span>
+            )}
           </div>
-          {inventory.availableKg < 100 && inventory.totalPurchasedKg > 0 && (
-            <span className="text-xs font-medium text-red-600">منخفض</span>
+          {inventory.byType.length > 1 && (
+            <div className="mt-2 pt-2 border-t border-current/10 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              {inventory.byType.map((t) => (
+                <span key={t.type}>
+                  {t.type}: {formatNum(t.availableKg)} كجم
+                </span>
+              ))}
+            </div>
           )}
         </div>
 

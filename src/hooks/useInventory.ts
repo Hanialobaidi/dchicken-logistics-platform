@@ -14,7 +14,7 @@ export function useInventory() {
 
   const directOrders = useQuery({
     queryKey: ['inventory', 'directOrders'],
-    queryFn: () => directOrdersTable.list<DirectOrder>({ select: 'id, actual_weight, status, created_at', orderBy: { createdAt: 'desc' }, limit: 500 }),
+    queryFn: () => directOrdersTable.list<DirectOrder>({ select: 'id, actual_weight, status, created_at, restaurant_name, driver_name, total_price, chicken_type, order_date, payment_method, payment_status', orderBy: { createdAt: 'desc' }, limit: 500 }),
   })
 
   const trips = useQuery({

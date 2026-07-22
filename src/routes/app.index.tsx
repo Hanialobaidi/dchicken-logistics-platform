@@ -289,17 +289,29 @@ function RecentDeliveries({ directOrders }: { directOrders: { id: string; driver
             {delivered.map((d) => (
               <div
                 key={d.id}
-                className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2.5"
+                className="rounded-lg border bg-muted/20 px-3 py-2.5 space-y-1"
               >
-                <div>
+                <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">{d.restaurantName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {d.driverName} · {d.actualWeight} كجم
-                    {d.totalPrice > 0 && <span className="mr-2">· {CURRENCY_FORMATTER.format(d.totalPrice)}</span>}
-                    {d.chickenType && <span className="mr-2">· {d.chickenType}</span>}
-                  </p>
+                  <Badge variant="default">تم التسليم</Badge>
                 </div>
-                <Badge variant="default">تم التسليم</Badge>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>{d.driverName}</span>
+                  <span>·</span>
+                  <span>{d.actualWeight} كجم</span>
+                  {d.totalPrice > 0 && (
+                    <>
+                      <span>·</span>
+                      <span>{CURRENCY_FORMATTER.format(d.totalPrice)}</span>
+                    </>
+                  )}
+                  {d.chickenType && (
+                    <>
+                      <span>·</span>
+                      <span>{d.chickenType}</span>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>

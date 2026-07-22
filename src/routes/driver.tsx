@@ -1681,7 +1681,18 @@ function DriverDashboard() {
         />
       )}
 
-      {/* Edit Order Invoice Preview */}
+      <ScrollToTop />
+    </div>
+
+      {/* Overlays — rendered outside dashboard wrapper for clean printing */}
+      {showReport && (
+        <ReportOverlay
+          driverId={effectiveDriverId}
+          driverName={effectiveDriverName}
+          onClose={() => setShowReport(false)}
+        />
+      )}
+
       {editInvoiceData && (
         <InvoicePreview
           data={editInvoiceData}
@@ -1689,23 +1700,10 @@ function DriverDashboard() {
         />
       )}
 
-      {/* View Invoice Preview */}
       {viewInvoiceData && (
         <InvoicePreview
           data={viewInvoiceData}
           onClose={() => setViewInvoiceData(null)}
-        />
-      )}
-
-      <ScrollToTop />
-    </div>
-
-      {/* Report overlay — rendered outside dashboard wrapper for clean printing */}
-      {showReport && (
-        <ReportOverlay
-          driverId={effectiveDriverId}
-          driverName={effectiveDriverName}
-          onClose={() => setShowReport(false)}
         />
       )}
     </>

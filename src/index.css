@@ -207,12 +207,13 @@
   }
 }
 
-/* When printing the report overlay, hide everything else */
+/* When printing overlay content, hide everything else */
 @media print {
-  body > *:not([data-print-report]) {
+  body > *:not([data-print-report]):not([data-invoice-preview]) {
     display: none !important;
   }
-  [data-print-report] {
+  [data-print-report],
+  [data-invoice-preview] {
     position: static !important;
     inset: auto !important;
     z-index: auto !important;

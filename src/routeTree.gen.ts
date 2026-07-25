@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as InvoiceVerifyRouteImport } from './routes/invoice.verify.$invoiceNumber'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as DriverReportRouteImport } from './routes/driver.report'
 import { Route as DriverDeliveryRouteImport } from './routes/driver.delivery'
@@ -21,6 +20,7 @@ import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppPurchasesRouteImport } from './routes/app.purchases'
 import { Route as AppDriversRouteImport } from './routes/app.drivers'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
+import { Route as InvoiceVerifyInvoiceNumberRouteImport } from './routes/invoice.verify.$invoiceNumber'
 
 const DriverRoute = DriverRouteImport.update({
   id: '/driver',
@@ -77,17 +77,17 @@ const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AppRoute,
 } as any)
-const InvoiceVerifyRoute = InvoiceVerifyRouteImport.update({
-  id: '/invoice/verify/$invoiceNumber',
-  path: '/invoice/verify/$invoiceNumber',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const InvoiceVerifyInvoiceNumberRoute =
+  InvoiceVerifyInvoiceNumberRouteImport.update({
+    id: '/invoice/verify/$invoiceNumber',
+    path: '/invoice/verify/$invoiceNumber',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/driver': typeof DriverRouteWithChildren
-  '/invoice/verify/$invoiceNumber': typeof InvoiceVerifyRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/drivers': typeof AppDriversRoute
   '/app/purchases': typeof AppPurchasesRoute
@@ -96,11 +96,11 @@ export interface FileRoutesByFullPath {
   '/driver/delivery': typeof DriverDeliveryRoute
   '/driver/report': typeof DriverReportRoute
   '/app/': typeof AppIndexRoute
+  '/invoice/verify/$invoiceNumber': typeof InvoiceVerifyInvoiceNumberRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/driver': typeof DriverRouteWithChildren
-  '/invoice/verify/$invoiceNumber': typeof InvoiceVerifyRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/drivers': typeof AppDriversRoute
   '/app/purchases': typeof AppPurchasesRoute
@@ -109,13 +109,13 @@ export interface FileRoutesByTo {
   '/driver/delivery': typeof DriverDeliveryRoute
   '/driver/report': typeof DriverReportRoute
   '/app': typeof AppIndexRoute
+  '/invoice/verify/$invoiceNumber': typeof InvoiceVerifyInvoiceNumberRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/driver': typeof DriverRouteWithChildren
-  '/invoice/verify/$invoiceNumber': typeof InvoiceVerifyRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/drivers': typeof AppDriversRoute
   '/app/purchases': typeof AppPurchasesRoute
@@ -124,6 +124,7 @@ export interface FileRoutesById {
   '/driver/delivery': typeof DriverDeliveryRoute
   '/driver/report': typeof DriverReportRoute
   '/app/': typeof AppIndexRoute
+  '/invoice/verify/$invoiceNumber': typeof InvoiceVerifyInvoiceNumberRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,7 +132,6 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/driver'
-    | '/invoice/verify/$invoiceNumber'
     | '/app/analytics'
     | '/app/drivers'
     | '/app/purchases'
@@ -140,11 +140,11 @@ export interface FileRouteTypes {
     | '/driver/delivery'
     | '/driver/report'
     | '/app/'
+    | '/invoice/verify/$invoiceNumber'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/driver'
-    | '/invoice/verify/$invoiceNumber'
     | '/app/analytics'
     | '/app/drivers'
     | '/app/purchases'
@@ -153,12 +153,12 @@ export interface FileRouteTypes {
     | '/driver/delivery'
     | '/driver/report'
     | '/app'
+    | '/invoice/verify/$invoiceNumber'
   id:
     | '__root__'
     | '/'
     | '/app'
     | '/driver'
-    | '/invoice/verify/$invoiceNumber'
     | '/app/analytics'
     | '/app/drivers'
     | '/app/purchases'
@@ -167,13 +167,14 @@ export interface FileRouteTypes {
     | '/driver/delivery'
     | '/driver/report'
     | '/app/'
+    | '/invoice/verify/$invoiceNumber'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   DriverRoute: typeof DriverRouteWithChildren
-  InvoiceVerifyRoute: typeof InvoiceVerifyRoute
+  InvoiceVerifyInvoiceNumberRoute: typeof InvoiceVerifyInvoiceNumberRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -259,7 +260,7 @@ declare module '@tanstack/react-router' {
       id: '/invoice/verify/$invoiceNumber'
       path: '/invoice/verify/$invoiceNumber'
       fullPath: '/invoice/verify/$invoiceNumber'
-      preLoaderRoute: typeof InvoiceVerifyRouteImport
+      preLoaderRoute: typeof InvoiceVerifyInvoiceNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -302,7 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   DriverRoute: DriverRouteWithChildren,
-  InvoiceVerifyRoute: InvoiceVerifyRoute,
+  InvoiceVerifyInvoiceNumberRoute: InvoiceVerifyInvoiceNumberRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

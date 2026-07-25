@@ -34,11 +34,17 @@ function InvoiceVerifyPage() {
 
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['verify-invoice', invoiceNumber],
-    queryFn: () =>
-      invoicesTable.list<Invoice>({
+    queryFn: async () => {
+      const result = await invoicesTable.list<Invoice>({
+        select: 'id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,pdf_url,owner_id,created_at,chicken_type,payment_status',
         where: { invoiceNumber },
         limit: 1,
-      }),
+      })
+      if (result.length === 0) {
+        console.warn('[InvoiceVerify] No invoice found for:', invoiceNumber)
+      }
+      return result
+    },
     enabled: !!invoiceNumber,
   })
 

@@ -286,7 +286,7 @@ function DirectOrderDialog({
         await createChickenType.mutateAsync(customChickenType.trim())
       }
 
-      await createDirectOrder.mutateAsync({
+      const createdOrder = await createDirectOrder.mutateAsync({
         driverId,
         driverName,
         orderDate,
@@ -303,27 +303,31 @@ function DirectOrderDialog({
         paymentStatus,
       })
 
-      // Save invoice record
+      // Save invoice record (linked to order)
       const invoiceNum = `INV-${Date.now().toString(36).toUpperCase()}`
-      await createInvoice.mutateAsync({
-        invoiceNumber: invoiceNum,
-        orderId: '',
-        orderType: 'direct_order',
-        restaurantName: name,
-        restaurantTaxNumber,
-        driverName,
-        driverId,
-        itemDescription: effectiveChickenType,
-        quantityKg: weightNum,
-        pricePerKg: priceNum,
-        subtotalBeforeTax: taxFields?.subtotalBeforeTax ?? 0,
-        vatAmount: taxFields?.vatAmount ?? 0,
-        totalAmount: totalPrice,
-        paymentMethod,
-        invoiceDate: orderDate,
-        pdfUrl: undefined,
-        paymentStatus,
-      })
+      try {
+        await createInvoice.mutateAsync({
+          invoiceNumber: invoiceNum,
+          orderId: (createdOrder as { id: string }).id,
+          orderType: 'direct_order',
+          restaurantName: name,
+          restaurantTaxNumber,
+          driverName,
+          driverId,
+          itemDescription: effectiveChickenType,
+          quantityKg: weightNum,
+          pricePerKg: priceNum,
+          subtotalBeforeTax: taxFields?.subtotalBeforeTax ?? 0,
+          vatAmount: taxFields?.vatAmount ?? 0,
+          totalAmount: totalPrice,
+          paymentMethod,
+          invoiceDate: orderDate,
+          pdfUrl: undefined,
+          paymentStatus,
+        })
+      } catch (invoiceErr) {
+        console.error('[NewOrder] Invoice creation failed:', invoiceErr)
+      }
 
       // Show invoice preview immediately after DB commit
       setInvoiceData({
@@ -794,31 +798,56 @@ function DirectOrderCard({
           size="sm"
           variant="outline"
           className="gap-1.5"
-          onClick={() => {
+          onClick={async () => {
             const inv = invoiceByOrderId.get(order.id)
-            onViewInvoice(inv ? {
-              invoiceNumber: inv.invoiceNumber,
-              date: formatDate(inv.invoiceDate),
-              restaurantName: inv.restaurantName,
-              restaurantTaxNumber: inv.restaurantTaxNumber,
-              driverName: inv.driverName,
-              quantityKg: inv.quantityKg,
-              pricePerKg: inv.pricePerKg,
-              paymentMethod: inv.paymentMethod,
-              paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-              chickenType: inv.chickenType,
-            } : {
-              invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
-              date: formatDate(order.orderDate),
-              restaurantName: order.restaurantName,
-              restaurantTaxNumber: order.restaurantTaxNumber,
-              driverName: effectiveDriverName,
-              quantityKg: order.actualWeight,
-              pricePerKg: order.pricePerKg,
-              paymentMethod: order.paymentMethod,
-              paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
-              chickenType: order.chickenType,
+            if (inv) {
+              onViewInvoice({
+                invoiceNumber: inv.invoiceNumber,
+                date: formatDate(inv.invoiceDate),
+                restaurantName: inv.restaurantName,
+                restaurantTaxNumber: inv.restaurantTaxNumber,
+                driverName: inv.driverName,
+                quantityKg: inv.quantityKg,
+                pricePerKg: inv.pricePerKg,
+                paymentMethod: inv.paymentMethod,
+                paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                chickenType: inv.chickenType,
+              })
+              return
+            }
+            // Map miss — query DB directly (handles race condition after new order)
+            const results = await invoicesTable.list<Invoice>({
+              where: { orderId: order.id },
+              limit: 1,
             })
+            const found = results[0]
+            if (found) {
+              onViewInvoice({
+                invoiceNumber: found.invoiceNumber,
+                date: formatDate(found.invoiceDate),
+                restaurantName: found.restaurantName,
+                restaurantTaxNumber: found.restaurantTaxNumber,
+                driverName: found.driverName,
+                quantityKg: found.quantityKg,
+                pricePerKg: found.pricePerKg,
+                paymentMethod: found.paymentMethod,
+                paymentStatus: (found.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                chickenType: found.chickenType,
+              })
+            } else {
+              onViewInvoice({
+                invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
+                date: formatDate(order.orderDate),
+                restaurantName: order.restaurantName,
+                restaurantTaxNumber: order.restaurantTaxNumber,
+                driverName: effectiveDriverName,
+                quantityKg: order.actualWeight,
+                pricePerKg: order.pricePerKg,
+                paymentMethod: order.paymentMethod,
+                paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
+                chickenType: order.chickenType,
+              })
+            }
           }}
         >
           <FileText className="h-3.5 w-3.5" />

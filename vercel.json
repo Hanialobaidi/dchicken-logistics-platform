@@ -3,6 +3,10 @@
     {
       "source": "/OneSignalSDKWorker.js",
       "destination": "/OneSignalSDKWorker.js"
+    },
+    {
+      "source": "/invoice/verify/:invoiceNumber",
+      "destination": "/index.html"
     }
   ],
   "headers": [

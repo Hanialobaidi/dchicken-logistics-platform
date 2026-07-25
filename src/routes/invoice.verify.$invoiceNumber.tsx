@@ -60,13 +60,13 @@ function InvoiceVerifyPage() {
         <div className="text-center mb-6">
           <img src="/icon-192.png" alt="DChicken" className="h-14 w-14 mx-auto mb-3" />
           <h1 className="text-lg font-bold text-foreground">التحقق من الفاتورة</h1>
-          <p className="text-xs text-muted-foreground mt-1">DChicken Logistics — آفاق الرغد للدواجن</p>
+          <p className="text-xs text-neutral-600 mt-1">DChicken Logistics — آفاق الرغد للدواجن</p>
         </div>
 
         {isLoading && (
           <div className="flex flex-col items-center gap-3 py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">جاري التحقق...</p>
+            <p className="text-sm text-neutral-500">جاري التحقق...</p>
           </div>
         )}
 
@@ -100,20 +100,20 @@ function InvoiceVerifyPage() {
               {/* Invoice info */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-[11px] text-muted-foreground">رقم الفاتورة</p>
-                  <p className="font-semibold">{inv.invoiceNumber}</p>
+                  <p className="text-[11px] font-medium text-neutral-500">رقم الفاتورة</p>
+                  <p className="font-semibold text-neutral-900">{inv.invoiceNumber}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground">التاريخ</p>
-                  <p className="font-semibold">{inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}</p>
+                  <p className="text-[11px] font-medium text-neutral-500">التاريخ</p>
+                  <p className="font-semibold text-neutral-900">{inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground">المطعم</p>
-                  <p className="font-semibold">{inv.restaurantName}</p>
+                  <p className="text-[11px] font-medium text-neutral-500">المطعم</p>
+                  <p className="font-semibold text-neutral-900">{inv.restaurantName}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground">السائق</p>
-                  <p className="font-semibold">{inv.driverName}</p>
+                  <p className="text-[11px] font-medium text-neutral-500">السائق</p>
+                  <p className="font-semibold text-neutral-900">{inv.driverName}</p>
                 </div>
               </div>
 
@@ -122,7 +122,7 @@ function InvoiceVerifyPage() {
               {/* Items table */}
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-[11px] text-muted-foreground">
+                  <tr className="border-b text-[11px] text-neutral-500">
                     <th className="text-right py-2 font-medium">الصنف</th>
                     <th className="text-center py-2 font-medium">الكمية</th>
                     <th className="text-center py-2 font-medium">سعر/كجم</th>
@@ -131,10 +131,10 @@ function InvoiceVerifyPage() {
                 </thead>
                 <tbody>
                   <tr className="border-b border-dashed">
-                    <td className="py-2 text-right">{inv.chickenType || 'شاورما مبرد (فريش)'}</td>
-                    <td className="py-2 text-center">{inv.quantityKg} كجم</td>
-                    <td className="py-2 text-center">{formatSAR(inv.pricePerKg)} ر.س</td>
-                    <td className="py-2 text-left font-semibold">{formatSAR(totalAmount)} ر.س</td>
+                    <td className="py-2 text-right text-neutral-800">{inv.chickenType || 'شاورما مبرد (فريش)'}</td>
+                    <td className="py-2 text-center text-neutral-800">{inv.quantityKg} كجم</td>
+                    <td className="py-2 text-center text-neutral-800">{formatSAR(inv.pricePerKg)} ر.س</td>
+                    <td className="py-2 text-left font-semibold text-neutral-900">{formatSAR(totalAmount)} ر.س</td>
                   </tr>
                 </tbody>
               </table>
@@ -142,28 +142,28 @@ function InvoiceVerifyPage() {
               {/* Totals */}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">المجموع قبل الضريبة</span>
-                  <span>{formatSAR(subtotalBeforeTax)} ر.س</span>
+                  <span className="text-neutral-600">المجموع قبل الضريبة</span>
+                  <span className="text-neutral-800">{formatSAR(subtotalBeforeTax)} ر.س</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">ضريبة القيمة المضافة (15%)</span>
-                  <span>{formatSAR(vatAmount)} ر.س</span>
+                  <span className="text-neutral-600">ضريبة القيمة المضافة (15%)</span>
+                  <span className="text-neutral-800">{formatSAR(vatAmount)} ر.س</span>
                 </div>
                 <div className="flex justify-between font-bold text-base border-t-2 border-black pt-2 mt-2">
-                  <span>الإجمالي الكلي</span>
-                  <span>{formatSAR(totalAmount)} ر.س</span>
+                  <span className="text-neutral-900">الإجمالي الكلي</span>
+                  <span className="text-neutral-900">{formatSAR(totalAmount)} ر.س</span>
                 </div>
               </div>
 
               {/* Payment */}
-              <div className="rounded-lg bg-muted/50 p-3 text-sm flex items-center justify-between">
+              <div className="rounded-lg bg-neutral-100 p-3 text-sm flex items-center justify-between">
                 <div>
-                  <span className="text-muted-foreground">طريقة الدفع: </span>
-                  <span className="font-semibold">{PAYMENT_LABELS[inv.paymentMethod] ?? inv.paymentMethod}</span>
+                  <span className="text-neutral-600">طريقة الدفع: </span>
+                  <span className="font-semibold text-neutral-900">{PAYMENT_LABELS[inv.paymentMethod] ?? inv.paymentMethod}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">الحالة: </span>
-                  <span className={`font-semibold ${inv.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <span className="text-neutral-600">الحالة: </span>
+                  <span className={`font-semibold ${inv.paymentStatus === 'paid' ? 'text-emerald-700' : 'text-red-700'}`}>
                     {PAYMENT_STATUS_LABELS[inv.paymentStatus] ?? inv.paymentStatus}
                   </span>
                 </div>
@@ -171,8 +171,8 @@ function InvoiceVerifyPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t bg-muted/30 text-center py-3 px-4">
-              <p className="text-[10px] text-muted-foreground">
+            <div className="border-t bg-neutral-50 text-center py-3 px-4">
+              <p className="text-[10px] text-neutral-500">
                 هذه الفاتورة صادرة إلكترونياً من منصة DChicken Logistics
               </p>
             </div>
@@ -180,7 +180,7 @@ function InvoiceVerifyPage() {
         )}
 
         {/* Company info */}
-        <div className="text-center mt-6 text-[10px] text-muted-foreground space-y-0.5">
+        <div className="text-center mt-6 text-[10px] text-neutral-500 space-y-0.5">
           <p>{COMPANY.name}</p>
           <p>الرقم الضريبي: {COMPANY.taxNumber} | السجل التجاري: {COMPANY.cr}</p>
           <p>{COMPANY.address} | هاتف: {COMPANY.phones}</p>

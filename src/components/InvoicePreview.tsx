@@ -1,6 +1,7 @@
-import { useRef } from 'react'
+import { useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Printer, X } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 
 const COMPANY = {
   name: 'شركة آفاق الرغد للدواجن',
@@ -63,6 +64,10 @@ export function InvoicePreview({
   }
 
   const chickenTypeLabel = data.chickenType || 'شاورما مبرد (فريش)'
+  const verifyUrl = useMemo(() => {
+    if (typeof window === 'undefined') return ''
+    return `${window.location.origin}/invoice/verify/${data.invoiceNumber}`
+  }, [data.invoiceNumber])
 
   return (
     <>
@@ -215,6 +220,21 @@ export function InvoicePreview({
             </div>
 
             <div style={{ borderTop: '2px solid #000', margin: '4mm 0' }} />
+
+            {/* QR Code */}
+            {verifyUrl && (
+              <div style={{ textAlign: 'center', marginBottom: '4mm' }}>
+                <QRCodeSVG
+                  value={verifyUrl}
+                  size={80}
+                  level="M"
+                  style={{ margin: '0 auto' }}
+                />
+                <div style={{ fontSize: '7pt', color: '#666', marginTop: '2mm' }}>
+                  امسح الرمز للتحقق من صحة الفاتورة إلكترونياً
+                </div>
+              </div>
+            )}
 
             {/* Footer */}
             <div style={{ textAlign: 'center' }}>

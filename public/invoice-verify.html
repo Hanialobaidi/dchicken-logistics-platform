@@ -76,28 +76,35 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
     (function(){
-      var URL='https://qstvssfmxblmzevqsycq.supabase.co';
-      var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzdHZzc2ZteGJsbXpldnFzeWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzOTEwNzIsImV4cCI6MjA5OTk2NzA3Mn0.yt-MKIIVTU85cqYyFSPzkAl-vZSzxub_W0D_emEdWPU';
+      var SB_URL='https://qstvssfmxblmzevqsycq.supabase.co';
+      var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzdHZzc2ZteGJsbXpldnFzeWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzOTEwNzIsImV4cCI6MjA5OTk2NzA3Mn0.yt-MKIIVTU85cqYyFSPzkAl-vZSzxub_W0D_emEdWPU';
       var app=document.getElementById('app');
 
-      var parts=location.pathname.split('/');
-      var invNum=parts[parts.length-1]||parts[parts.length-2]||'';
-      if(!invNum||invNum==='verify'){
-        invNum=decodeURIComponent(parts[parts.length-1]||'');
-      }
+      var parts=location.pathname.replace(/\/+$/,'').split('/');
+      var invNum=decodeURIComponent(parts[parts.length-1]||'');
 
-      if(!invNum){showError(invNum);return;}
+      if(!invNum||invNum==='verify'){showError(invNum);return;}
 
-      var sb=supabase.createClient(URL,KEY);
-      sb.from('invoices').select('id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,payment_status,chicken_type').eq('invoice_number',invNum).limit(1).then(function(r){
-        if(r.error){console.error(r.error);showError(invNum);return;}
-        var d=r.data&&r.data[0];
-        if(!d){showError(invNum);return;}
-        showInvoice(d);
-      }).catch(function(e){console.error(e);showError(invNum);});
+      var cols='id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,payment_status,chicken_type';
+      var url=SB_URL+'/rest/v1/invoices?select='+encodeURIComponent(cols)+'&invoice_number=eq.'+encodeURIComponent(invNum)+'&limit=1';
+
+      fetch(url,{
+        headers:{
+          'apikey':SB_KEY,
+          'Authorization':'Bearer '+SB_KEY
+        }
+      }).then(function(res){
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        return res.json();
+      }).then(function(rows){
+        if(!rows||rows.length===0){showError(invNum);return;}
+        showInvoice(rows[0]);
+      }).catch(function(e){
+        console.error('[InvoiceVerify]',e);
+        showError(invNum);
+      });
 
       function fmt(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
       var PM={cash:'نقدي',network:'شبكة',credit:'آجل'};
@@ -143,7 +150,7 @@
       }
 
       function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-      function fmtDate(d){if(!d)return'—';var p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
+      function fmtDate(d){if(!d)return'—';var p=String(d).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
     })();
   </script>
 </body>

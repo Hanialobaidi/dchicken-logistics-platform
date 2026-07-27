@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>التحقق من الفاتورة | DChicken</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-touch-2026.png" />
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans Arabic',sans-serif;
+      min-height:100dvh;background:linear-gradient(to bottom,#ecfdf5,#fff);color:#171717;display:flex;align-items:flex-start;justify-content:center}
+    .wrap{width:100%;max-width:32rem;padding:2rem 1rem}
+    .center{text-align:center}
+    .loader{display:flex;flex-direction:column;align-items:center;gap:.75rem;padding:4rem 0}
+    .spinner{width:2rem;height:2rem;border:3px solid #d1d5db;border-top-color:#059669;border-radius:50%;animation:spin .6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .card{background:#fff;border:1px solid #a7f3d0;border-radius:.75rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+    .badge{background:#059669;color:#fff;text-align:center;padding:.75rem 1rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
+    .badge svg{width:1.25rem;height:1.25rem}
+    .body{padding:1.25rem}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.875rem}
+    .label{font-size:.6875rem;font-weight:500;color:#737373;margin-bottom:2px}
+    .val{font-weight:600;color:#171717}
+    .sep{border:none;border-top:1px dashed #d1d5db;margin:1rem 0}
+    table{width:100%;font-size:.875rem;border-collapse:collapse}
+    th{text-align:right;font-size:.6875rem;font-weight:500;color:#737373;padding:.5rem 0;border-bottom:1px solid #e5e7eb}
+    td{padding:.5rem 0;color:#262626;border-bottom:1px dashed #e5e7eb}
+    .td-center{text-align:center}
+    .td-left{text-align:left}
+    .td-bold{font-weight:600;color:#171717}
+    .totals{font-size:.875rem}
+    .totals .row{display:flex;justify-content:space-between;padding:2px 0}
+    .totals .row span:first-child{color:#525252}
+    .totals .row span:last-child{color:#262626}
+    .totals .total-row{display:flex;justify-content:space-between;font-weight:700;font-size:1rem;border-top:2px solid #000;padding-top:.5rem;margin-top:.5rem}
+    .totals .total-row span{color:#171717}
+    .pay-box{background:#f5f5f5;border-radius:.5rem;padding:.75rem;font-size:.875rem;display:flex;justify-content:space-between;align-items:center}
+    .pay-box .pl{color:#525252}
+    .pay-box .pv{font-weight:600;color:#171717}
+    .pay-paid{color:#15803d}
+    .pay-unpaid{color:#dc2626}
+    .footer{border-top:1px solid #e5e7eb;background:#fafafa;text-align:center;padding:.75rem 1rem}
+    .footer p{font-size:.625rem;color:#737373}
+    .company{text-align:center;margin-top:1.5rem;font-size:.625rem;color:#737373;line-height:1.6}
+    .err-box{background:#fef2f2;border:1px solid #fecaca;border-radius:.75rem;padding:1.5rem;text-align:center}
+    .err-box svg{width:3rem;height:3rem;color:#f87171;margin:0 auto .75rem}
+    .err-box .et{font-size:.875rem;font-weight:600;color:#991b1b}
+    .err-box .ed{font-size:.75rem;color:#dc2626;margin-top:.25rem}
+    .err-box .ed2{font-size:.75rem;color:#dc2626;margin-top:.25rem;word-break:break-all}
+    h1{font-size:1.125rem;font-weight:700;color:#171717}
+    .subtitle{font-size:.75rem;color:#525252;margin-top:.25rem}
+    .icon-wrap{width:3.5rem;height:3.5rem;margin:0 auto .75rem}
+    .icon-wrap img{width:100%;height:100%;object-fit:contain}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="center" style="margin-bottom:1.5rem">
+      <div class="icon-wrap"><img src="/icon-192.png" alt="DChicken" /></div>
+      <h1>التحقق من الفاتورة</h1>
+      <p class="subtitle">DChicken Logistics — آفاق الرغد للدواجن</p>
+    </div>
+
+    <div id="app">
+      <div class="loader">
+        <div class="spinner"></div>
+        <p style="font-size:.875rem;color:#525252">جاري التحقق...</p>
+      </div>
+    </div>
+
+    <div class="company">
+      <p>شركة آفاق الرغد للدواجن</p>
+      <p>الرقم الضريبي: 311648304500003 | السجل التجاري: 7054494799</p>
+      <p>حي النزهة، جدة | هاتف: 0533632350 / 0575759184</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    (function(){
+      var URL='https://qstvssfmxblmzevqsycq.supabase.co';
+      var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzdHZzc2ZteGJsbXpldnFzeWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzOTEwNzIsImV4cCI6MjA5OTk2NzA3Mn0.yt-MKIIVTU85cqYyFSPzkAl-vZSzxub_W0D_emEdWPU';
+      var app=document.getElementById('app');
+
+      var parts=location.pathname.split('/');
+      var invNum=parts[parts.length-1]||parts[parts.length-2]||'';
+      if(!invNum||invNum==='verify'){
+        invNum=decodeURIComponent(parts[parts.length-1]||'');
+      }
+
+      if(!invNum){showError(invNum);return;}
+
+      var sb=supabase.createClient(URL,KEY);
+      sb.from('invoices').select('id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,payment_status,chicken_type').eq('invoice_number',invNum).limit(1).then(function(r){
+        if(r.error){console.error(r.error);showError(invNum);return;}
+        var d=r.data&&r.data[0];
+        if(!d){showError(invNum);return;}
+        showInvoice(d);
+      }).catch(function(e){console.error(e);showError(invNum);});
+
+      function fmt(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+      var PM={cash:'نقدي',network:'شبكة',credit:'آجل'};
+      var PS={paid:'مدفوع',unpaid:'غير مدفوع'};
+
+      function showInvoice(d){
+        var total=d.total_amount||(d.quantity_kg*d.price_per_kg);
+        var sub=d.subtotal_before_tax||(total/1.15);
+        var vat=d.vat_amount||(total-sub);
+        var pClass=d.payment_status==='paid'?'pay-paid':'pay-unpaid';
+        app.innerHTML='<div class="card">'
+          +'<div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg><span style="font-size:.875rem;font-weight:700">فاتورة صحيحة وموثقة</span></div>'
+          +'<div class="body">'
+          +'<div class="grid2">'
+            +'<div><p class="label">رقم الفاتورة</p><p class="val">'+esc(d.invoice_number)+'</p></div>'
+            +'<div><p class="label">التاريخ</p><p class="val">'+fmtDate(d.invoice_date)+'</p></div>'
+            +'<div><p class="label">المطعم</p><p class="val">'+esc(d.restaurant_name)+'</p></div>'
+            +'<div><p class="label">السائق</p><p class="val">'+esc(d.driver_name)+'</p></div>'
+          +'</div>'
+          +'<hr class="sep">'
+          +'<table><thead><tr><th>الصنف</th><th class="td-center">الكمية</th><th class="td-center">سعر/كجم</th><th class="td-left">المجموع</th></tr></thead>'
+          +'<tbody><tr><td>'+(esc(d.chicken_type||'شاورما مبرد (فريش)'))+'</td><td class="td-center">'+d.quantity_kg+' كجم</td><td class="td-center">'+fmt(d.price_per_kg)+' ر.س</td><td class="td-left td-bold">'+fmt(total)+' ر.س</td></tr></tbody></table>'
+          +'<div class="totals">'
+            +'<div class="row"><span>المجموع قبل الضريبة</span><span>'+fmt(sub)+' ر.س</span></div>'
+            +'<div class="row"><span>ضريبة القيمة المضافة (15%)</span><span>'+fmt(vat)+' ر.س</span></div>'
+            +'<div class="total-row"><span>الإجمالي الكلي</span><span>'+fmt(total)+' ر.س</span></div>'
+          +'</div>'
+          +'<div class="pay-box" style="margin-top:1rem">'
+            +'<div><span class="pl">طريقة الدفع: </span><span class="pv">'+(PM[d.payment_method]||d.payment_method)+'</span></div>'
+            +'<div><span class="pl">الحالة: </span><span class="pv '+pClass+'">'+(PS[d.payment_status]||d.payment_status)+'</span></div>'
+          +'</div>'
+          +'</div>'
+          +'<div class="footer"><p>هذه الفاتورة صادرة إلكترونياً من منصة DChicken Logistics</p></div>'
+          +'</div>';
+      }
+
+      function showError(num){
+        app.innerHTML='<div class="err-box">'
+          +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>'
+          +'<p class="et">فاتورة غير موجودة</p>'
+          +'<p class="ed2">رقم الفاتورة "'+esc(num||'')+'" غير صحيح أو غير موجود</p>'
+          +'</div>';
+      }
+
+      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+      function fmtDate(d){if(!d)return'—';var p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
+    })();
+  </script>
+</body>
+</html>

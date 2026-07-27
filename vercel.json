@@ -6,7 +6,7 @@
     },
     {
       "source": "/invoice/verify/:invoiceNumber",
-      "destination": "/index.html"
+      "destination": "/invoice-verify.html"
     }
   ],
   "headers": [

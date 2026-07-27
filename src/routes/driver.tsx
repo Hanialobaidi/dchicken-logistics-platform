@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
+import { requireAuth } from '@/lib/authGuard'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1775,6 +1776,7 @@ function DriverDashboard() {
 /* ──── Route ──── */
 export const Route = createFileRoute('/driver')({
   ssr: false,
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: 'DChicken · واجهة السائق' },

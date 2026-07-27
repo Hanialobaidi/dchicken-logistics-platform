@@ -1,19 +1,5 @@
 import { redirect } from '@tanstack/react-router'
-
-function getSupabaseUser(): { id: string; email: string } | null {
-  if (typeof window === 'undefined') return null
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key?.startsWith('sb-') && key.endsWith('-auth-token')) {
-        const parsed = JSON.parse(localStorage.getItem(key) ?? '{}')
-        const u = parsed?.user ?? parsed?.current_session?.user
-        if (u?.id) return { id: u.id, email: u.email ?? '' }
-      }
-    }
-  } catch { /* ignore */ }
-  return null
-}
+import { supabase } from '@/lib/supabase'
 
 function getDriverSessionRaw(): { driverId: string; driverName: string; username: string } | null {
   if (typeof window === 'undefined') return null
@@ -24,17 +10,26 @@ function getDriverSessionRaw(): { driverId: string; driverName: string; username
   } catch { return null }
 }
 
-export function requireAuth() {
+export async function requireAuth() {
   const driver = getDriverSessionRaw()
   if (driver) return
-  const user = getSupabaseUser()
-  if (user) return
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) return
+  } catch { /* ignore */ }
+
   throw redirect({ to: '/' })
 }
 
-export function redirectIfLoggedIn() {
+export async function redirectIfLoggedIn() {
   const ds = getDriverSessionRaw()
   if (ds) throw redirect({ to: '/driver', replace: true })
-  const user = getSupabaseUser()
-  if (user) throw redirect({ to: '/app', replace: true })
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) throw redirect({ to: '/app', replace: true })
+  } catch (e) {
+    if (e && typeof e === 'object' && 'to' in e) throw e
+  }
 }

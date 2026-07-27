@@ -1,6 +1,16 @@
 import { redirect } from '@tanstack/react-router'
+import { supabase } from '@/lib/supabase'
 
-function getSupabaseUser(): { id: string; email: string } | null {
+function getDriverSessionRaw(): { driverId: string; driverName: string; username: string } | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem('dchicken_driver_session')
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch { return null }
+}
+
+function getSupabaseUserSync(): { id: string; email: string } | null {
   if (typeof window === 'undefined') return null
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -15,26 +25,26 @@ function getSupabaseUser(): { id: string; email: string } | null {
   return null
 }
 
-function getDriverSessionRaw(): { driverId: string; driverName: string; username: string } | null {
-  if (typeof window === 'undefined') return null
+async function getSupabaseUserAsync(): Promise<{ id: string; email: string } | null> {
   try {
-    const raw = localStorage.getItem('dchicken_driver_session')
-    if (!raw) return null
-    return JSON.parse(raw)
-  } catch { return null }
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) return { id: session.user.id, email: session.user.email ?? '' }
+  } catch { /* ignore */ }
+  return null
 }
 
-export function requireAuth() {
+export async function requireAuth() {
   const driver = getDriverSessionRaw()
   if (driver) return
-  const user = getSupabaseUser()
-  if (user) return
+  if (getSupabaseUserSync()) return
+  if (await getSupabaseUserAsync()) return
   throw redirect({ to: '/' })
 }
 
-export function redirectIfLoggedIn() {
+export async function redirectIfLoggedIn() {
   const ds = getDriverSessionRaw()
   if (ds) throw redirect({ to: '/driver', replace: true })
-  const user = getSupabaseUser()
-  if (user) throw redirect({ to: '/app', replace: true })
+  if (getSupabaseUserSync()) throw redirect({ to: '/app', replace: true })
+  const asyncUser = await getSupabaseUserAsync()
+  if (asyncUser) throw redirect({ to: '/app', replace: true })
 }

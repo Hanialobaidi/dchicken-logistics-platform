@@ -16,14 +16,14 @@ import { toast } from 'sonner'
 const REMEMBER_KEY = 'dchicken_remember_me'
 
 export const Route = createFileRoute('/')({
-  beforeLoad: async () => {
+  beforeLoad: () => {
     if (typeof window !== 'undefined' && localStorage.getItem(REMEMBER_KEY) === 'false') {
       localStorage.removeItem(REMEMBER_KEY)
-      await signOut()
+      signOut()
       oneSignalOptOut()
       return
     }
-    await redirectIfLoggedIn()
+    redirectIfLoggedIn()
   },
   head: () => ({
     meta: [

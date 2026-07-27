@@ -86,8 +86,8 @@ function RootDocument({ children }: { children: ReactNode }) {
     <html lang="ar" dir="rtl">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <link rel="preconnect" href="https://qstvssfmxblmzevqsycq.supabase.co" />
-        <link rel="dns-prefetch" href="https://qstvssfmxblmzevqsycq.supabase.co" />
+        <link rel="preconnect" href="https://qwkdzguoqvhmidpkqkbi.supabase.co" />
+        <link rel="dns-prefetch" href="https://qwkdzguoqvhmidpkqkbi.supabase.co" />
         <HeadContent />
         {/*
           WebSite + Organization entity (rendered on every page, once at the root).

@@ -85,31 +85,36 @@
       var parts=location.pathname.replace(/\/+$/,'').split('/');
       var invNum=decodeURIComponent(parts[parts.length-1]||'');
 
-      if(!invNum||invNum==='verify'){showError(invNum);return;}
+      if(!invNum||invNum==='verify'){showError(invNum,'لا يوجد رقم فاتورة');return;}
 
-      var url=SB_URL+'/rest/v1/invoices?select=id%2Cinvoice_number%2Corder_id%2Corder_type%2Crestaurant_name%2Crestaurant_tax_number%2Cdriver_name%2Cdriver_id%2Citem_description%2Cquantity_kg%2Cprice_per_kg%2Csubtotal_before_tax%2Cvat_amount%2Ctotal_amount%2Cpayment_method%2Cinvoice_date%2Cpayment_status%2Cchicken_type&invoice_number=eq.'+encodeURIComponent(invNum)+'&limit=1';
+      var qs='select=*&invoice_number=eq.'+encodeURIComponent(invNum)+'&limit=1';
+      var url=SB_URL+'/rest/v1/invoices?'+qs;
 
-      console.log('[InvoiceVerify] Querying:', url);
+      console.log('[Verify] invNum='+invNum);
+      console.log('[Verify] url='+url);
 
       fetch(url,{
         headers:{
           'apikey':SB_KEY,
-          'Authorization':'Bearer '+SB_KEY,
-          'Accept':'application/json',
-          'Prefer':'return=representation'
+          'Authorization':'Bearer '+SB_KEY
         }
       }).then(function(res){
-        console.log('[InvoiceVerify] Status:', res.status);
-        return res.text();
-      }).then(function(text){
-        console.log('[InvoiceVerify] Response:', text);
-        var rows;
-        try{rows=JSON.parse(text);}catch(e){showError(invNum);return;}
+        console.log('[Verify] status='+res.status);
+        if(!res.ok){
+          return res.text().then(function(t){
+            console.error('[Verify] err body='+t);
+            showError(invNum,'خطأ في الاتصال: '+res.status);
+          });
+        }
+        return res.json();
+      }).then(function(rows){
+        if(!rows)return;
+        console.log('[Verify] rows='+JSON.stringify(rows).substring(0,200));
         if(!rows||rows.length===0){showError(invNum);return;}
         showInvoice(rows[0]);
       }).catch(function(e){
-        console.error('[InvoiceVerify] Error:',e);
-        showError(invNum);
+        console.error('[Verify] catch',e);
+        showError(invNum,'خطأ: '+e.message);
       });
 
       function fmt(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -147,10 +152,10 @@
           +'</div>';
       }
 
-      function showError(num){
+      function showError(num,msg){
         app.innerHTML='<div class="err-box">'
           +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>'
-          +'<p class="et">فاتورة غير موجودة</p>'
+          +'<p class="et">'+(msg||'فاتورة غير موجودة')+'</p>'
           +'<p class="ed2">رقم الفاتورة "'+esc(num||'')+'" غير صحيح أو غير موجود</p>'
           +'</div>';
       }

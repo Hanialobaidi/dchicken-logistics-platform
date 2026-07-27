@@ -87,22 +87,28 @@
 
       if(!invNum||invNum==='verify'){showError(invNum);return;}
 
-      var cols='id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,payment_status,chicken_type';
-      var url=SB_URL+'/rest/v1/invoices?select='+encodeURIComponent(cols)+'&invoice_number=eq.'+encodeURIComponent(invNum)+'&limit=1';
+      var url=SB_URL+'/rest/v1/invoices?select=id%2Cinvoice_number%2Corder_id%2Corder_type%2Crestaurant_name%2Crestaurant_tax_number%2Cdriver_name%2Cdriver_id%2Citem_description%2Cquantity_kg%2Cprice_per_kg%2Csubtotal_before_tax%2Cvat_amount%2Ctotal_amount%2Cpayment_method%2Cinvoice_date%2Cpayment_status%2Cchicken_type&invoice_number=eq.'+encodeURIComponent(invNum)+'&limit=1';
+
+      console.log('[InvoiceVerify] Querying:', url);
 
       fetch(url,{
         headers:{
           'apikey':SB_KEY,
-          'Authorization':'Bearer '+SB_KEY
+          'Authorization':'Bearer '+SB_KEY,
+          'Accept':'application/json',
+          'Prefer':'return=representation'
         }
       }).then(function(res){
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        return res.json();
-      }).then(function(rows){
+        console.log('[InvoiceVerify] Status:', res.status);
+        return res.text();
+      }).then(function(text){
+        console.log('[InvoiceVerify] Response:', text);
+        var rows;
+        try{rows=JSON.parse(text);}catch(e){showError(invNum);return;}
         if(!rows||rows.length===0){showError(invNum);return;}
         showInvoice(rows[0]);
       }).catch(function(e){
-        console.error('[InvoiceVerify]',e);
+        console.error('[InvoiceVerify] Error:',e);
         showError(invNum);
       });
 

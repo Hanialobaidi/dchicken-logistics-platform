@@ -3,7 +3,6 @@ import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-r
 import { Shell } from '@/Shell'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { requireAuth } from '@/lib/authGuard'
 import {
   Tooltip,
   TooltipContent,
@@ -23,7 +22,7 @@ import {
   Sun,
   BarChart3,
 } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
@@ -243,6 +242,12 @@ function AdminSidebar() {
 function AdminLayout() {
   const { isAuthenticated, isLoading } = useAuth()
 
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      window.location.href = '/'
+    }
+  }, [isLoading, isAuthenticated])
+
   if (isLoading) return <AdminSkeleton />
 
   if (!isAuthenticated) {
@@ -290,6 +295,5 @@ function AdminSkeleton() {
 
 export const Route = createFileRoute('/app')({
   ssr: false,
-  beforeLoad: requireAuth,
   component: () => <AdminLayout />,
 })

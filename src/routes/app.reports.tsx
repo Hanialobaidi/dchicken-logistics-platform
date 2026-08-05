@@ -1,4 +1,4 @@
-﻿import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,8 +50,8 @@ import { formatNum, formatPriceFull, formatDate } from '@/lib/utils'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { useRefreshAll } from '@/hooks/useRefreshAll'
 
-/* â”€â”€â”€â”€ Types â”€â”€â”€â”€ */
-type OperationType = 'ط·ظ„ط¨ظٹط© ظ…ط¨ط§ط´ط±ط©' | 'ظ…ط´طھط±ظٹط§طھ'
+/* ──── Types ──── */
+type OperationType = 'طلبية مباشرة' | 'مشتريات'
 
 interface MergedRow {
   id: string
@@ -68,20 +68,20 @@ interface MergedRow {
 }
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive'; label: string }> = {
-  pending: { variant: 'secondary', label: 'ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±' },
-  delivered: { variant: 'default', label: 'طھظ… ط§ظ„طھط³ظ„ظٹظ…' },
-  cancelled: { variant: 'destructive', label: 'ظ…ظ„ط؛ظٹ' },
+  pending: { variant: 'secondary', label: 'قيد الانتظار' },
+  delivered: { variant: 'default', label: 'تم التسليم' },
+  cancelled: { variant: 'destructive', label: 'ملغي' },
 }
 
 const TYPE_CONFIG: Record<OperationType, { icon: typeof ClipboardList; variant: 'default' | 'outline'; color: string }> = {
-  'ط·ظ„ط¨ظٹط© ظ…ط¨ط§ط´ط±ط©': { icon: ClipboardList, variant: 'default', color: 'text-emerald-600 bg-emerald-50' },
-  'ظ…ط´طھط±ظٹط§طھ': { icon: ShoppingCart, variant: 'outline', color: 'text-amber-600 bg-amber-50' },
+  'طلبية مباشرة': { icon: ClipboardList, variant: 'default', color: 'text-emerald-600 bg-emerald-50' },
+  'مشتريات': { icon: ShoppingCart, variant: 'outline', color: 'text-amber-600 bg-amber-50' },
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
-  cash: 'ظ†ظ‚ط¯ظٹ',
-  network: 'ط´ط¨ظƒط©',
-  credit: 'ط¢ط¬ظ„',
+  cash: 'نقدي',
+  network: 'شبكة',
+  credit: 'آجل',
 }
 
 function invoiceDataFromRecord(inv: Invoice): InvoiceData {
@@ -99,7 +99,7 @@ function invoiceDataFromRecord(inv: Invoice): InvoiceData {
   }
 }
 
-/* â”€â”€â”€â”€ CSV helpers â”€â”€â”€â”€ */
+/* ──── CSV helpers ──── */
 function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return ''
   const str = String(value)
@@ -124,7 +124,7 @@ function downloadCSV(csv: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-/* â”€â”€â”€â”€ Reports Page â”€â”€â”€â”€ */
+/* ──── Reports Page ──── */
 function ReportsPage() {
   const refreshAll = useRefreshAll()
   const { data: directOrders = [] } = useDirectOrders()
@@ -135,7 +135,7 @@ function ReportsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [typeFilter, setTypeFilter] = useState<OperationType | 'ط§ظ„ظƒظ„'>('ط§ظ„ظƒظ„')
+  const [typeFilter, setTypeFilter] = useState<OperationType | 'الكل'>('الكل')
   const [companySearch, setCompanySearch] = useState('')
   const [companyDateFrom, setCompanyDateFrom] = useState('')
   const [companyDateTo, setCompanyDateTo] = useState('')
@@ -143,7 +143,7 @@ function ReportsPage() {
   const [purchaseImagePreview, setPurchaseImagePreview] = useState<string | null>(null)
   const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null)
 
-  // Map direct orders â†’ their generated tax invoice (the one drivers see)
+  // Map direct orders → their generated tax invoice (the one drivers see)
   const invoiceByOrderId = useMemo(() => {
     const map = new Map<string, Invoice>()
     for (const inv of invoices) {
@@ -158,7 +158,7 @@ function ReportsPage() {
   const mergedData = useMemo((): MergedRow[] => {
     const orderRows: MergedRow[] = directOrders.map((o) => ({
       id: o.id,
-      type: 'ط·ظ„ط¨ظٹط© ظ…ط¨ط§ط´ط±ط©' as OperationType,
+      type: 'طلبية مباشرة' as OperationType,
       name: o.restaurantName,
       driverName: o.driverName,
       date: o.orderDate,
@@ -172,9 +172,9 @@ function ReportsPage() {
 
     const purchaseRows: MergedRow[] = purchases.map((p) => ({
       id: p.id,
-      type: 'ظ…ط´طھط±ظٹط§طھ' as OperationType,
+      type: 'مشتريات' as OperationType,
       name: p.farmName,
-      driverName: 'â€”',
+      driverName: '—',
       date: p.purchaseDate,
       weight: p.quantityKg,
       pricePerKg: p.pricePerKg,
@@ -190,8 +190,8 @@ function ReportsPage() {
   }, [directOrders, purchases])
 
   // Summary stats
-  const totalRevenue = useMemo(() => mergedData.filter((r) => r.type !== 'ظ…ط´طھط±ظٹط§طھ').reduce((s, r) => s + r.totalPrice, 0), [mergedData])
-  const totalPurchasesCost = useMemo(() => mergedData.filter((r) => r.type === 'ظ…ط´طھط±ظٹط§طھ').reduce((s, r) => s + r.totalPrice, 0), [mergedData])
+  const totalRevenue = useMemo(() => mergedData.filter((r) => r.type !== 'مشتريات').reduce((s, r) => s + r.totalPrice, 0), [mergedData])
+  const totalPurchasesCost = useMemo(() => mergedData.filter((r) => r.type === 'مشتريات').reduce((s, r) => s + r.totalPrice, 0), [mergedData])
   const totalCompanyPurchases = useMemo(
     () => companyPurchases.reduce((s, p) => s + (p.amount ?? 0), 0),
     [companyPurchases],
@@ -231,7 +231,7 @@ function ReportsPage() {
   const companyStoreBreakdown = useMemo(() => {
     const map = new Map<string, { store: string; count: number; total: number }>()
     for (const p of filteredCompany) {
-      const key = p.storeName ?? 'â€”'
+      const key = p.storeName ?? '—'
       const cur = map.get(key) ?? { store: key, count: 0, total: 0 }
       cur.count += 1
       cur.total += p.amount ?? 0
@@ -243,7 +243,7 @@ function ReportsPage() {
   // Filters
   const filtered = useMemo(() => {
     return mergedData.filter((row) => {
-      if (typeFilter !== 'ط§ظ„ظƒظ„' && row.type !== typeFilter) return false
+      if (typeFilter !== 'الكل' && row.type !== typeFilter) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
         const matchName = row.name.toLowerCase().includes(q)
@@ -256,16 +256,16 @@ function ReportsPage() {
     })
   }, [mergedData, typeFilter, searchQuery, dateFrom, dateTo])
 
-  const hasFilters = searchQuery || dateFrom || dateTo || typeFilter !== 'ط§ظ„ظƒظ„'
+  const hasFilters = searchQuery || dateFrom || dateTo || typeFilter !== 'الكل'
 
   const clearFilters = () => {
     setSearchQuery('')
     setDateFrom('')
     setDateTo('')
-    setTypeFilter('ط§ظ„ظƒظ„')
+    setTypeFilter('الكل')
   }
 
-  // CSV export â€” separate files for each type when "ط§ظ„ظƒظ„" is selected
+  // CSV export — separate files for each type when "الكل" is selected
   const handleExport = useCallback(async () => {
     const [allOrders, allPurchases, allCompany] = await Promise.all([
       directOrdersTable.list<DirectOrder>({ orderBy: { createdAt: 'desc' }, limit: 500 }),
@@ -273,11 +273,11 @@ function ReportsPage() {
       companyPurchasesTable.list<CompanyPurchase>({ orderBy: { purchaseDate: 'desc' }, limit: 500 }),
     ])
 
-    const orderHeaders = ['ط§ظ„ظ…ط·ط¹ظ…', 'ط§ظ„ط³ط§ط¦ظ‚', 'ط§ظ„طھط§ط±ظٹط®', 'ط§ظ„ظƒظ…ظٹط© (ظƒط¬ظ…)', 'ط³ط¹ط±/ظƒط¬ظ…', 'ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ', 'ط§ظ„ط¯ظپط¹', 'ط§ظ„ط­ط§ظ„ط©']
-    const purchaseHeaders = ['ط§ظ„ظ…ط²ط±ط¹ط©', 'ط§ظ„طھط§ط±ظٹط®', 'ط§ظ„ظƒظ…ظٹط© (ظƒط¬ظ…)', 'ط³ط¹ط±/ظƒط¬ظ…', 'ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ', 'ط·ط±ظٹظ‚ط© ط§ظ„ط¯ظپط¹', 'ظ…ظ„ط§ط­ط¸ط§طھ']
-    const companyHeaders = ['ط§ظ„طھط§ط±ظٹط®', 'ط§ظ„ط³ظ„ط¹ط©', 'ط§ظ„ظ…ط­ظ„', 'ط§ظ„ظ…ط¨ظ„ط؛', 'ظ…ظ„ط§ط­ط¸ط§طھ']
+    const orderHeaders = ['المطعم', 'السائق', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'الدفع', 'الحالة']
+    const purchaseHeaders = ['المزرعة', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'طريقة الدفع', 'ملاحظات']
+    const companyHeaders = ['التاريخ', 'السلعة', 'المحل', 'المبلغ', 'ملاحظات']
 
-    if (typeFilter === 'ط·ظ„ط¨ظٹط© ظ…ط¨ط§ط´ط±ط©') {
+    if (typeFilter === 'طلبية مباشرة') {
       const rows = allOrders.map((o) => [
         o.restaurantName,
         o.driverName,
@@ -285,28 +285,28 @@ function ReportsPage() {
         o.actualWeight,
         o.pricePerKg ?? 0,
         o.totalPrice ?? 0,
-        PAYMENT_LABELS[o.paymentMethod ?? 'cash'] ?? 'ظ†ظ‚ط¯ظٹ',
-        o.status === 'delivered' ? 'طھظ… ط§ظ„طھط³ظ„ظٹظ…' : 'ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±',
+        PAYMENT_LABELS[o.paymentMethod ?? 'cash'] ?? 'نقدي',
+        o.status === 'delivered' ? 'تم التسليم' : 'قيد الانتظار',
       ].map(escapeCSV))
-      downloadCSV(buildCSV(orderHeaders, rows), `ط·ظ„ط¨ظٹط§طھ_ظ…ط¨ط§ط´ط±ط©_${new Date().toISOString().slice(0, 10)}.csv`)
+      downloadCSV(buildCSV(orderHeaders, rows), `طلبيات_مباشرة_${new Date().toISOString().slice(0, 10)}.csv`)
       return
     }
 
-    if (typeFilter === 'ظ…ط´طھط±ظٹط§طھ') {
+    if (typeFilter === 'مشتريات') {
       const rows = allPurchases.map((p) => [
         p.farmName,
         p.purchaseDate,
         p.quantityKg,
         p.pricePerKg,
         p.totalCost,
-        PAYMENT_LABELS[p.paymentMethod ?? 'cash'] ?? 'ظ†ظ‚ط¯ظٹ',
+        PAYMENT_LABELS[p.paymentMethod ?? 'cash'] ?? 'نقدي',
         p.notes ?? '',
       ].map(escapeCSV))
-      downloadCSV(buildCSV(purchaseHeaders, rows), `ظ…ط´طھط±ظٹط§طھ_${new Date().toISOString().slice(0, 10)}.csv`)
+      downloadCSV(buildCSV(purchaseHeaders, rows), `مشتريات_${new Date().toISOString().slice(0, 10)}.csv`)
       return
     }
 
-    // "ط§ظ„ظƒظ„" â€” download two separate files
+    // "الكل" — download two separate files
     const orderRows = allOrders.map((o) => [
       o.restaurantName,
       o.driverName,
@@ -314,8 +314,8 @@ function ReportsPage() {
       o.actualWeight,
       o.pricePerKg ?? 0,
       o.totalPrice ?? 0,
-      PAYMENT_LABELS[o.paymentMethod ?? 'cash'] ?? 'ظ†ظ‚ط¯ظٹ',
-      o.status === 'delivered' ? 'طھظ… ط§ظ„طھط³ظ„ظٹظ…' : 'ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±',
+      PAYMENT_LABELS[o.paymentMethod ?? 'cash'] ?? 'نقدي',
+      o.status === 'delivered' ? 'تم التسليم' : 'قيد الانتظار',
     ].map(escapeCSV))
 
     const purchaseRows = allPurchases.map((p) => [
@@ -324,7 +324,7 @@ function ReportsPage() {
       p.quantityKg,
       p.pricePerKg,
       p.totalCost,
-      PAYMENT_LABELS[p.paymentMethod ?? 'cash'] ?? 'ظ†ظ‚ط¯ظٹ',
+      PAYMENT_LABELS[p.paymentMethod ?? 'cash'] ?? 'نقدي',
       p.notes ?? '',
     ].map(escapeCSV))
 
@@ -336,14 +336,14 @@ function ReportsPage() {
       p.notes ?? '',
     ].map(escapeCSV))
 
-    downloadCSV(buildCSV(orderHeaders, orderRows), `ط·ظ„ط¨ظٹط§طھ_ظ…ط¨ط§ط´ط±ط©_${new Date().toISOString().slice(0, 10)}.csv`)
-    downloadCSV(buildCSV(purchaseHeaders, purchaseRows), `ظ…ط´طھط±ظٹط§طھ_${new Date().toISOString().slice(0, 10)}.csv`)
-    downloadCSV(buildCSV(companyHeaders, companyRows), `ظ…ط´طھط±ظٹط§طھ_ط§ظ„ط´ط±ظƒط©_${new Date().toISOString().slice(0, 10)}.csv`)
+    downloadCSV(buildCSV(orderHeaders, orderRows), `طلبيات_مباشرة_${new Date().toISOString().slice(0, 10)}.csv`)
+    downloadCSV(buildCSV(purchaseHeaders, purchaseRows), `مشتريات_${new Date().toISOString().slice(0, 10)}.csv`)
+    downloadCSV(buildCSV(companyHeaders, companyRows), `مشتريات_الشركة_${new Date().toISOString().slice(0, 10)}.csv`)
   }, [typeFilter])
 
-  // CSV export â€” company purchases only (respects section filters)
+  // CSV export — company purchases only (respects section filters)
   const handleCompanyExport = useCallback(() => {
-    const headers = ['ط§ظ„طھط§ط±ظٹط®', 'ط§ظ„ط³ظ„ط¹ط©', 'ط§ظ„ظ…ط­ظ„', 'ط§ظ„ظ…ط¨ظ„ط؛', 'ظ…ظ„ط§ط­ط¸ط§طھ']
+    const headers = ['التاريخ', 'السلعة', 'المحل', 'المبلغ', 'ملاحظات']
     const rows = filteredCompany.map((p) => [
       p.purchaseDate,
       p.itemName,
@@ -351,7 +351,7 @@ function ReportsPage() {
       p.amount,
       p.notes ?? '',
     ].map(escapeCSV))
-    downloadCSV(buildCSV(headers, rows), `ظ…ط´طھط±ظٹط§طھ_ط§ظ„ط´ط±ظƒط©_${new Date().toISOString().slice(0, 10)}.csv`)
+    downloadCSV(buildCSV(headers, rows), `مشتريات_الشركة_${new Date().toISOString().slice(0, 10)}.csv`)
   }, [filteredCompany])
 
   return (
@@ -362,15 +362,15 @@ function ReportsPage() {
         <div>
           <h1 className="text-lg font-bold flex items-center gap-2">
             <Archive className="h-5 w-5 text-primary" />
-            ط§ظ„طھظ‚ط§ط±ظٹط± ط§ظ„ط´ط§ظ…ظ„ط©
+            التقارير الشاملة
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            ط³ط¬ظ„ ط§ظ„ظ…ط´طھط±ظٹط§طھ ظˆط§ظ„ط·ظ„ط¨ظٹط§طھ ط§ظ„ظ…ط¨ط§ط´ط±ط©
+            سجل المشتريات والطلبيات المباشرة
           </p>
         </div>
         <Button onClick={handleExport} className="gap-2 min-h-[44px]">
           <Download className="h-4 w-4" />
-          طھطµط¯ظٹط± CSV
+          تصدير CSV
         </Button>
       </div>
 
@@ -382,7 +382,7 @@ function ReportsPage() {
               <ArrowUpCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ…ط¨ظٹط¹ط§طھ</p>
+              <p className="text-[10px] text-muted-foreground">إجمالي المبيعات</p>
               <p className="text-sm font-bold text-emerald-700">{formatPriceFull(totalRevenue)}</p>
             </div>
           </CardContent>
@@ -393,7 +393,7 @@ function ReportsPage() {
               <ArrowDownCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ…ط´طھط±ظٹط§طھ</p>
+              <p className="text-[10px] text-muted-foreground">إجمالي المشتريات</p>
               <p className="text-sm font-bold text-amber-700">{formatPriceFull(totalPurchasesCost)}</p>
             </div>
           </CardContent>
@@ -404,7 +404,7 @@ function ReportsPage() {
               <ShoppingBag className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">ظ…ط´طھط±ظٹط§طھ ط§ظ„ط´ط±ظƒط©</p>
+              <p className="text-[10px] text-muted-foreground">مشتريات الشركة</p>
               <p className="text-sm font-bold text-violet-700">{formatPriceFull(totalCompanyPurchases)}</p>
             </div>
           </CardContent>
@@ -415,7 +415,7 @@ function ReportsPage() {
               <ClipboardList className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">ط§ظ„ط¹ظ…ظ„ظٹط§طھ</p>
+              <p className="text-[10px] text-muted-foreground">العمليات</p>
               <p className="text-sm font-bold">{formatNum(mergedData.length)}</p>
             </div>
           </CardContent>
@@ -426,7 +426,7 @@ function ReportsPage() {
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">ط§ظ„ظپظˆط§طھظٹط±</p>
+              <p className="text-[10px] text-muted-foreground">الفواتير</p>
               <p className="text-sm font-bold">{formatNum(totalInvoices)}</p>
             </div>
           </CardContent>
@@ -439,11 +439,11 @@ function ReportsPage() {
           <div className="flex flex-col gap-3">
             <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <Filter className="h-3.5 w-3.5" />
-              طھطµظپظٹط© ط§ظ„ظ†طھط§ط¦ط¬
+              تصفية النتائج
             </p>
             <div className="flex flex-wrap gap-2 items-center">
               <div className="flex gap-1">
-                {(['ط§ظ„ظƒظ„', 'ط·ظ„ط¨ظٹط© ظ…ط¨ط§ط´ط±ط©', 'ظ…ط´طھط±ظٹط§طھ'] as const).map((t) => (
+                {(['الكل', 'طلبية مباشرة', 'مشتريات'] as const).map((t) => (
                   <Button
                     key={t}
                     size="sm"
@@ -458,21 +458,21 @@ function ReportsPage() {
               <div className="relative">
                 <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="ط¨ط­ط« ط¨ط§ظ„ط§ط³ظ…..."
+                  placeholder="بحث بالاسم..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-44 h-9 pr-8 text-xs text-right"
                 />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">ظ…ظ†</span>
+                <span className="text-xs text-muted-foreground">من</span>
                 <Input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                   className="w-36 h-9 text-xs"
                 />
-                <span className="text-xs text-muted-foreground">ط¥ظ„ظ‰</span>
+                <span className="text-xs text-muted-foreground">إلى</span>
                 <Input
                   type="date"
                   value={dateTo}
@@ -483,7 +483,7 @@ function ReportsPage() {
               {hasFilters && (
                 <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1 text-xs">
                   <X className="h-3 w-3" />
-                  ظ…ط³ط­
+                  مسح
                 </Button>
               )}
             </div>
@@ -500,12 +500,12 @@ function ReportsPage() {
                 <Archive className="h-8 w-8 text-muted-foreground/50" />
               </div>
               <p className="text-sm font-medium">
-                {hasFilters ? 'ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬ ظ…ط·ط§ط¨ظ‚ط©' : 'ظ„ط§ طھظˆط¬ط¯ ط¹ظ…ظ„ظٹط§طھ ظ…ط³ط¬ظ„ط©'}
+                {hasFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد عمليات مسجلة'}
               </p>
               <p className="text-xs text-muted-foreground max-w-xs">
                 {hasFilters
-                  ? 'ط¬ط±ط¨ طھط؛ظٹظٹط± ظ…ط¹ط§ظٹظٹط± ط§ظ„طھطµظپظٹط©'
-                  : 'ط³طھط¸ظ‡ط± ط§ظ„ظ…ط´طھط±ظٹط§طھ ظˆط§ظ„ط·ظ„ط¨ظٹط§طھ ظ‡ظ†ط§ ظپظˆط± طھط³ط¬ظٹظ„ظ‡ط§'}
+                  ? 'جرب تغيير معايير التصفية'
+                  : 'ستظهر المشتريات والطلبيات هنا فور تسجيلها'}
               </p>
             </div>
           ) : (
@@ -513,15 +513,15 @@ function ReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">ط§ظ„ظ†ظˆط¹</TableHead>
-                    <TableHead className="text-right">ط§ظ„ط§ط³ظ…</TableHead>
-                    <TableHead className="text-right">ط§ظ„طھط§ط±ظٹط®</TableHead>
-                    <TableHead className="text-right">ط§ظ„ظƒظ…ظٹط©</TableHead>
-                    <TableHead className="text-right">ط³ط¹ط±/ظƒط¬ظ…</TableHead>
-                    <TableHead className="text-right">ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ</TableHead>
-                    <TableHead className="text-right">ط§ظ„ط¯ظپط¹</TableHead>
-                    <TableHead className="text-right">ط§ظ„ظپط§طھظˆط±ط©</TableHead>
-                    <TableHead className="text-right">ط§ظ„ط­ط§ظ„ط©</TableHead>
+                    <TableHead className="text-right">النوع</TableHead>
+                    <TableHead className="text-right">الاسم</TableHead>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">الكمية</TableHead>
+                    <TableHead className="text-right">سعر/كجم</TableHead>
+                    <TableHead className="text-right">الإجمالي</TableHead>
+                    <TableHead className="text-right">الدفع</TableHead>
+                    <TableHead className="text-right">الفاتورة</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -540,26 +540,26 @@ function ReportsPage() {
                         <TableCell className="font-medium">
                           <div>
                             <p className="text-sm">{row.name}</p>
-                            {row.driverName !== 'â€”' && (
+                            {row.driverName !== '—' && (
                               <p className="text-xs text-muted-foreground">{row.driverName}</p>
                             )}
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {row.date ? formatDate(row.date) : 'â€”'}
+                          {row.date ? formatDate(row.date) : '—'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{row.weight} ظƒط¬ظ…</TableCell>
+                        <TableCell className="text-muted-foreground">{row.weight} كجم</TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {row.pricePerKg > 0 ? `${row.pricePerKg} ط±.ط³` : 'â€”'}
+                          {row.pricePerKg > 0 ? `${row.pricePerKg} ر.س` : '—'}
                         </TableCell>
                         <TableCell className="font-medium text-sm">
-                          {row.totalPrice > 0 ? formatPriceFull(row.totalPrice) : 'â€”'}
+                          {row.totalPrice > 0 ? formatPriceFull(row.totalPrice) : '—'}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {PAYMENT_LABELS[row.paymentMethod] ?? row.paymentMethod ?? 'â€”'}
+                          {PAYMENT_LABELS[row.paymentMethod] ?? row.paymentMethod ?? '—'}
                         </TableCell>
                         <TableCell>
-                          {row.type === 'ط·ظ„ط¨ظٹط© ظ…ط¨ط§ط´ط±ط©' ? (
+                          {row.type === 'طلبية مباشرة' ? (
                             (() => {
                               const inv = invoiceByOrderId.get(row.id)
                               return inv ? (
@@ -570,10 +570,10 @@ function ReportsPage() {
                                   onClick={() => setPreviewInvoice(inv)}
                                 >
                                   <Eye className="h-3.5 w-3.5" />
-                                  ط§ظ„ظپط§طھظˆط±ط©
+                                  الفاتورة
                                 </Button>
                               ) : (
-                                <span className="text-xs text-muted-foreground">â€”</span>
+                                <span className="text-xs text-muted-foreground">—</span>
                               )
                             })()
                           ) : row.invoiceImageUrl ? (
@@ -584,10 +584,10 @@ function ReportsPage() {
                               onClick={() => setPurchaseImagePreview(row.invoiceImageUrl)}
                             >
                               <Eye className="h-3.5 w-3.5" />
-                              ط¹ط±ط¶
+                              عرض
                             </Button>
                           ) : (
-                            <span className="text-xs text-muted-foreground">â€”</span>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -603,25 +603,25 @@ function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Order/purchase invoice image preview */}
+      {/* Purchase invoice image preview */}
       <Dialog open={!!purchaseImagePreview} onOpenChange={() => setPurchaseImagePreview(null)}>
         <DialogContent className="max-w-2xl gap-4">
           <DialogHeader className="text-right">
             <DialogTitle className="flex items-center justify-end gap-2">
-              طµظˆط±ط© ط§ظ„ظپط§طھظˆط±ط©
+              صورة الفاتورة
               <FileText className="h-5 w-5 text-primary" />
             </DialogTitle>
           </DialogHeader>
           {purchaseImagePreview && (
             <img
               src={purchaseImagePreview}
-              alt="ظپط§طھظˆط±ط©"
+              alt="فاتورة"
               className="w-full rounded-lg border object-contain max-h-[70vh]"
             />
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setPurchaseImagePreview(null)} className="min-h-[44px] flex-1">
-              ط¥ط؛ظ„ط§ظ‚
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -640,12 +640,12 @@ function ReportsPage() {
         <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
             <ShoppingBag className="h-4 w-4 text-violet-600" />
-            طھظ‚ط±ظٹط± ط§ظ„ظ…ط´طھط±ظٹط§طھ ط§ظ„ط¹ط§ظ…ط© ظ„ظ„ط´ط±ظƒط©
+            تقرير المشتريات العامة للشركة
           </CardTitle>
           {companyPurchases.length > 0 && (
             <Button variant="outline" size="sm" onClick={handleCompanyExport} className="gap-1.5 h-9 text-xs">
               <Download className="h-3.5 w-3.5" />
-              طھطµط¯ظٹط± CSV
+              تصدير CSV
             </Button>
           )}
         </CardHeader>
@@ -658,7 +658,7 @@ function ReportsPage() {
                   <ShoppingBag className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground">ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ…ط¨ظ„ط؛</p>
+                  <p className="text-[10px] text-muted-foreground">إجمالي المبلغ</p>
                   <p className="text-sm font-bold text-violet-700 truncate">{formatPriceFull(companyTotal)}</p>
                 </div>
               </CardContent>
@@ -669,7 +669,7 @@ function ReportsPage() {
                   <Receipt className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground">ط¹ط¯ط¯ ط§ظ„ط¹ظ…ظ„ظٹط§طھ</p>
+                  <p className="text-[10px] text-muted-foreground">عدد العمليات</p>
                   <p className="text-sm font-bold text-violet-700">{formatNum(companyCount)}</p>
                 </div>
               </CardContent>
@@ -680,7 +680,7 @@ function ReportsPage() {
                   <Store className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground">ط¹ط¯ط¯ ط§ظ„ظ…ط­ظ„ط§طھ</p>
+                  <p className="text-[10px] text-muted-foreground">عدد المحلات</p>
                   <p className="text-sm font-bold text-violet-700">{formatNum(companyStores)}</p>
                 </div>
               </CardContent>
@@ -691,7 +691,7 @@ function ReportsPage() {
                   <Wallet className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground">ظ…طھظˆط³ط· ط§ظ„ط¹ظ…ظ„ظٹط©</p>
+                  <p className="text-[10px] text-muted-foreground">متوسط العملية</p>
                   <p className="text-sm font-bold text-violet-700 truncate">{formatPriceFull(companyAvg)}</p>
                 </div>
               </CardContent>
@@ -704,21 +704,21 @@ function ReportsPage() {
               <div className="relative">
                 <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="ط¨ط­ط« ط¨ط§ظ„ط³ظ„ط¹ط© ط£ظˆ ط§ظ„ظ…ط­ظ„..."
+                  placeholder="بحث بالسلعة أو المحل..."
                   value={companySearch}
                   onChange={(e) => setCompanySearch(e.target.value)}
                   className="w-44 h-9 pr-8 text-xs text-right"
                 />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">ظ…ظ†</span>
+                <span className="text-xs text-muted-foreground">من</span>
                 <Input
                   type="date"
                   value={companyDateFrom}
                   onChange={(e) => setCompanyDateFrom(e.target.value)}
                   className="w-36 h-9 text-xs"
                 />
-                <span className="text-xs text-muted-foreground">ط¥ظ„ظ‰</span>
+                <span className="text-xs text-muted-foreground">إلى</span>
                 <Input
                   type="date"
                   value={companyDateTo}
@@ -729,7 +729,7 @@ function ReportsPage() {
               {companyHasFilters && (
                 <Button variant="ghost" size="sm" onClick={clearCompanyFilters} className="h-9 gap-1 text-xs">
                   <X className="h-3 w-3" />
-                  ظ…ط³ط­
+                  مسح
                 </Button>
               )}
             </div>
@@ -741,26 +741,26 @@ function ReportsPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
                 <ShoppingBag className="h-7 w-7 text-muted-foreground/50" />
               </div>
-              <p className="text-sm font-medium">ظ„ط§ طھظˆط¬ط¯ ظ…ط´طھط±ظٹط§طھ ط¹ط§ظ…ط© ظ…ط³ط¬ظ„ط©</p>
+              <p className="text-sm font-medium">لا توجد مشتريات عامة مسجلة</p>
               <p className="text-xs text-muted-foreground max-w-xs">
-                ط³ط¬ظ‘ظ„ ظ…ط´طھط±ظٹط§طھ ط§ظ„ط´ط±ظƒط© ظ…ظ† ظ‚ط³ظ… "ظ…ط´طھط±ظٹط§طھ ط§ظ„ط´ط±ظƒط©" â€” ط§ظ„ط³ظ„ط¹ط©طŒ ط§ظ„ط³ط¹ط±طŒ ط§ظ„ظ…ط­ظ„طŒ ظˆطµظˆط±ط© ط§ظ„ظپط§طھظˆط±ط©
+                سجّل مشتريات الشركة من قسم "مشتريات الشركة" — السلعة، السعر، المحل، وصورة الفاتورة
               </p>
             </div>
           ) : filteredCompany.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-              <p className="text-sm text-muted-foreground">ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬ ظ…ط·ط§ط¨ظ‚ط© ظ„ظ„طھطµظپظٹط©</p>
+              <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة للتصفية</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">ط§ظ„طھط§ط±ظٹط®</TableHead>
-                    <TableHead className="text-right">ط§ظ„ط³ظ„ط¹ط©</TableHead>
-                    <TableHead className="text-right">ط§ظ„ظ…ط­ظ„</TableHead>
-                    <TableHead className="text-right">ط§ظ„ظ…ط¨ظ„ط؛</TableHead>
-                    <TableHead className="text-right">ظ…ظ„ط§ط­ط¸ط§طھ</TableHead>
-                    <TableHead className="text-right">ط§ظ„ظپط§طھظˆط±ط©</TableHead>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">السلعة</TableHead>
+                    <TableHead className="text-right">المحل</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">ملاحظات</TableHead>
+                    <TableHead className="text-right">الفاتورة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -783,7 +783,7 @@ function ReportsPage() {
                         {formatPriceFull(p.amount)}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs max-w-[180px] truncate">
-                        {p.notes ?? 'â€”'}
+                        {p.notes ?? '—'}
                       </TableCell>
                       <TableCell>
                         {p.invoiceImageUrl ? (
@@ -794,10 +794,10 @@ function ReportsPage() {
                             onClick={() => setCompanyPreview(p.invoiceImageUrl)}
                           >
                             <Eye className="h-3.5 w-3.5" />
-                            ط¹ط±ط¶
+                            عرض
                           </Button>
                         ) : (
-                          <span className="text-xs text-muted-foreground">â€”</span>
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -815,7 +815,7 @@ function ReportsPage() {
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <Store className="h-4 w-4 text-violet-600" />
-              ط§ظ„ط¥ظ†ظپط§ظ‚ ط­ط³ط¨ ط§ظ„ظ…ط­ظ„
+              الإنفاق حسب المحل
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3">
@@ -826,7 +826,7 @@ function ReportsPage() {
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="font-medium truncate">{store}</span>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatNum(count)} ط¹ظ…ظ„ظٹط© آ· {formatPriceFull(total)}
+                      {formatNum(count)} عملية · {formatPriceFull(total)}
                     </span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -847,20 +847,20 @@ function ReportsPage() {
         <DialogContent className="max-w-2xl gap-4">
           <DialogHeader className="text-right">
             <DialogTitle className="flex items-center justify-end gap-2">
-              طµظˆط±ط© ط§ظ„ظپط§طھظˆط±ط©
+              صورة الفاتورة
               <FileText className="h-5 w-5 text-primary" />
             </DialogTitle>
           </DialogHeader>
           {companyPreview && (
             <img
               src={companyPreview}
-              alt="ظپط§طھظˆط±ط©"
+              alt="فاتورة"
               className="w-full rounded-lg border object-contain max-h-[70vh]"
             />
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setCompanyPreview(null)} className="min-h-[44px] flex-1">
-              ط¥ط؛ظ„ط§ظ‚
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -871,14 +871,14 @@ function ReportsPage() {
   )
 }
 
-/* â”€â”€â”€â”€ Route â”€â”€â”€â”€ */
+/* ──── Route ──── */
 export const Route = createFileRoute('/app/reports')({
   ssr: false,
-  head: () => ({ meta: [{ title: 'ط§ظ„طھظ‚ط§ط±ظٹط± ط§ظ„ط´ط§ظ…ظ„ط© آ· DChicken' }] }),
+  head: () => ({ meta: [{ title: 'التقارير الشاملة · DChicken' }] }),
   component: () => <ReportsPage />,
 })
 
-/* â”€â”€â”€â”€ Skeleton â”€â”€â”€â”€ */
+/* ──── Skeleton ──── */
 function ReportsSkeleton() {
   return (
     <div dir="rtl" className="p-6 space-y-6 animate-pulse">

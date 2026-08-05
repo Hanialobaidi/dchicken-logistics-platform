@@ -64,6 +64,18 @@ export interface Purchase {
   chickenType: string
 }
 
+export interface CompanyPurchase {
+  id: string
+  itemName: string
+  storeName: string
+  amount: number
+  purchaseDate: string
+  invoiceImageUrl: string | null
+  notes: string | null
+  ownerId: string
+  createdAt: string
+}
+
 export interface DirectOrder {
   id: string
   driverId: string

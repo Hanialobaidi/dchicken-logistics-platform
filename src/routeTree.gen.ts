@@ -19,6 +19,7 @@ import { Route as AppRestaurantsRouteImport } from './routes/app.restaurants'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppPurchasesRouteImport } from './routes/app.purchases'
 import { Route as AppDriversRouteImport } from './routes/app.drivers'
+import { Route as AppCompanyPurchasesRouteImport } from './routes/app.company-purchases'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
 import { Route as InvoiceVerifyInvoiceNumberRouteImport } from './routes/invoice.verify.$invoiceNumber'
 
@@ -72,6 +73,11 @@ const AppDriversRoute = AppDriversRouteImport.update({
   path: '/drivers',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCompanyPurchasesRoute = AppCompanyPurchasesRouteImport.update({
+  id: '/company-purchases',
+  path: '/company-purchases',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/driver': typeof DriverRouteWithChildren
   '/app/analytics': typeof AppAnalyticsRoute
+  '/app/company-purchases': typeof AppCompanyPurchasesRoute
   '/app/drivers': typeof AppDriversRoute
   '/app/purchases': typeof AppPurchasesRoute
   '/app/reports': typeof AppReportsRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/driver': typeof DriverRouteWithChildren
   '/app/analytics': typeof AppAnalyticsRoute
+  '/app/company-purchases': typeof AppCompanyPurchasesRoute
   '/app/drivers': typeof AppDriversRoute
   '/app/purchases': typeof AppPurchasesRoute
   '/app/reports': typeof AppReportsRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/driver': typeof DriverRouteWithChildren
   '/app/analytics': typeof AppAnalyticsRoute
+  '/app/company-purchases': typeof AppCompanyPurchasesRoute
   '/app/drivers': typeof AppDriversRoute
   '/app/purchases': typeof AppPurchasesRoute
   '/app/reports': typeof AppReportsRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/driver'
     | '/app/analytics'
+    | '/app/company-purchases'
     | '/app/drivers'
     | '/app/purchases'
     | '/app/reports'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/'
     | '/driver'
     | '/app/analytics'
+    | '/app/company-purchases'
     | '/app/drivers'
     | '/app/purchases'
     | '/app/reports'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/driver'
     | '/app/analytics'
+    | '/app/company-purchases'
     | '/app/drivers'
     | '/app/purchases'
     | '/app/reports'
@@ -249,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDriversRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/company-purchases': {
+      id: '/app/company-purchases'
+      path: '/company-purchases'
+      fullPath: '/app/company-purchases'
+      preLoaderRoute: typeof AppCompanyPurchasesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/analytics': {
       id: '/app/analytics'
       path: '/analytics'
@@ -268,6 +287,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppCompanyPurchasesRoute: typeof AppCompanyPurchasesRoute
   AppDriversRoute: typeof AppDriversRoute
   AppPurchasesRoute: typeof AppPurchasesRoute
   AppReportsRoute: typeof AppReportsRoute
@@ -277,6 +297,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppCompanyPurchasesRoute: AppCompanyPurchasesRoute,
   AppDriversRoute: AppDriversRoute,
   AppPurchasesRoute: AppPurchasesRoute,
   AppReportsRoute: AppReportsRoute,

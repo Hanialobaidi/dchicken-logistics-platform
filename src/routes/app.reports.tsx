@@ -1,10 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -16,8 +23,9 @@ import {
 import { useDirectOrders } from '@/hooks/useDirectOrders'
 import { usePurchases } from '@/hooks/usePurchases'
 import { useInvoices } from '@/hooks/useInventory'
-import { directOrdersTable, purchasesTable } from '@/lib/db'
-import type { DirectOrder, Purchase } from '@/types'
+import { useCompanyPurchases } from '@/hooks/useCompanyPurchases'
+import { directOrdersTable, purchasesTable, companyPurchasesTable } from '@/lib/db'
+import type { DirectOrder, Purchase, CompanyPurchase } from '@/types'
 import {
   Archive,
   Download,
@@ -29,6 +37,10 @@ import {
   ShoppingCart,
   ArrowDownCircle,
   ArrowUpCircle,
+  ShoppingBag,
+  Eye,
+  Store,
+  Calendar,
 } from 'lucide-react'
 import { useState, useMemo, useCallback } from 'react'
 import { formatNum, formatPriceFull, formatDate } from '@/lib/utils'
@@ -99,11 +111,14 @@ function ReportsPage() {
   const { data: directOrders = [] } = useDirectOrders()
   const { data: purchases = [] } = usePurchases()
   const { data: invoices = [] } = useInvoices()
+  const { data: companyPurchases = [] } = useCompanyPurchases()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [typeFilter, setTypeFilter] = useState<OperationType | 'الكل'>('الكل')
+  const [companySearch, setCompanySearch] = useState('')
+  const [companyPreview, setCompanyPreview] = useState<string | null>(null)
 
   // Merge all data types
   const mergedData = useMemo((): MergedRow[] => {
@@ -141,7 +156,21 @@ function ReportsPage() {
   // Summary stats
   const totalRevenue = useMemo(() => mergedData.filter((r) => r.type !== 'مشتريات').reduce((s, r) => s + r.totalPrice, 0), [mergedData])
   const totalPurchasesCost = useMemo(() => mergedData.filter((r) => r.type === 'مشتريات').reduce((s, r) => s + r.totalPrice, 0), [mergedData])
+  const totalCompanyPurchases = useMemo(
+    () => companyPurchases.reduce((s, p) => s + (p.amount ?? 0), 0),
+    [companyPurchases],
+  )
   const totalInvoices = invoices.length
+
+  // Company purchases filter
+  const filteredCompany = useMemo(() => {
+    if (!companySearch.trim()) return companyPurchases
+    const q = companySearch.trim().toLowerCase()
+    return companyPurchases.filter(
+      (p) =>
+        p.itemName?.toLowerCase().includes(q) || p.storeName?.toLowerCase().includes(q),
+    )
+  }, [companyPurchases, companySearch])
 
   // Filters
   const filtered = useMemo(() => {
@@ -170,13 +199,15 @@ function ReportsPage() {
 
   // CSV export — separate files for each type when "الكل" is selected
   const handleExport = useCallback(async () => {
-    const [allOrders, allPurchases] = await Promise.all([
+    const [allOrders, allPurchases, allCompany] = await Promise.all([
       directOrdersTable.list<DirectOrder>({ orderBy: { createdAt: 'desc' }, limit: 500 }),
       purchasesTable.list<Purchase>({ orderBy: { purchaseDate: 'desc' }, limit: 500 }),
+      companyPurchasesTable.list<CompanyPurchase>({ orderBy: { purchaseDate: 'desc' }, limit: 500 }),
     ])
 
     const orderHeaders = ['المطعم', 'السائق', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'الدفع', 'الحالة']
     const purchaseHeaders = ['المزرعة', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'ملاحظات']
+    const companyHeaders = ['التاريخ', 'السلعة', 'المحل', 'المبلغ', 'ملاحظات']
 
     if (typeFilter === 'طلبية مباشرة') {
       const rows = allOrders.map((o) => [
@@ -227,8 +258,17 @@ function ReportsPage() {
       p.notes ?? '',
     ].map(escapeCSV))
 
+    const companyRows = allCompany.map((p) => [
+      p.purchaseDate,
+      p.itemName,
+      p.storeName,
+      p.amount,
+      p.notes ?? '',
+    ].map(escapeCSV))
+
     downloadCSV(buildCSV(orderHeaders, orderRows), `طلبيات_مباشرة_${new Date().toISOString().slice(0, 10)}.csv`)
     downloadCSV(buildCSV(purchaseHeaders, purchaseRows), `مشتريات_${new Date().toISOString().slice(0, 10)}.csv`)
+    downloadCSV(buildCSV(companyHeaders, companyRows), `مشتريات_الشركة_${new Date().toISOString().slice(0, 10)}.csv`)
   }, [typeFilter])
 
   return (
@@ -272,6 +312,17 @@ function ReportsPage() {
             <div>
               <p className="text-[10px] text-muted-foreground">إجمالي المشتريات</p>
               <p className="text-sm font-bold text-amber-700">{formatPriceFull(totalPurchasesCost)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-violet-200 bg-violet-50/50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">مشتريات الشركة</p>
+              <p className="text-sm font-bold text-violet-700">{formatPriceFull(totalCompanyPurchases)}</p>
             </div>
           </CardContent>
         </Card>
@@ -431,6 +482,119 @@ function ReportsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Company purchases section */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-violet-600" />
+            المشتريات العامة للشركة
+          </CardTitle>
+          {companyPurchases.length > 0 && (
+            <div className="relative">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالسلعة أو المحل..."
+                value={companySearch}
+                onChange={(e) => setCompanySearch(e.target.value)}
+                className="w-44 h-9 pr-8 text-xs text-right"
+              />
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          {companyPurchases.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                <ShoppingBag className="h-7 w-7 text-muted-foreground/50" />
+              </div>
+              <p className="text-sm font-medium">لا توجد مشتريات عامة مسجلة</p>
+              <p className="text-xs text-muted-foreground max-w-xs">
+                سجّل مشتريات الشركة من قسم "مشتريات الشركة" — السلعة، السعر، المحل، وصورة الفاتورة
+              </p>
+            </div>
+          ) : filteredCompany.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <p className="text-sm text-muted-foreground">لا توجد نتائج</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">السلعة</TableHead>
+                    <TableHead className="text-right">المحل</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">الفاتورة</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCompany.map((p: CompanyPurchase) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="text-muted-foreground text-sm">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          {formatDate(p.purchaseDate)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium">{p.itemName}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        <span className="flex items-center gap-1.5">
+                          <Store className="h-3 w-3 text-muted-foreground" />
+                          {p.storeName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">
+                        {formatPriceFull(p.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {p.invoiceImageUrl ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1 text-xs text-primary"
+                            onClick={() => setCompanyPreview(p.invoiceImageUrl)}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            عرض
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Company purchase image preview */}
+      <Dialog open={!!companyPreview} onOpenChange={() => setCompanyPreview(null)}>
+        <DialogContent className="max-w-2xl gap-4">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center justify-end gap-2">
+              صورة الفاتورة
+              <FileText className="h-5 w-5 text-primary" />
+            </DialogTitle>
+          </DialogHeader>
+          {companyPreview && (
+            <img
+              src={companyPreview}
+              alt="فاتورة"
+              className="w-full rounded-lg border object-contain max-h-[70vh]"
+            />
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCompanyPreview(null)} className="min-h-[44px] flex-1">
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <ScrollToTop />
     </div>
     </PullToRefresh>

@@ -21,6 +21,7 @@ import {
   Moon,
   Sun,
   BarChart3,
+  ShoppingBag,
 } from 'lucide-react'
 import { useState, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils'
@@ -41,6 +42,7 @@ const NAV_ITEMS: NavItemDef[] = [
   { to: '/app/restaurants', icon: <Store className="h-4 w-4" />, label: 'المطاعم' },
   { to: '/app/drivers', icon: <Users className="h-4 w-4" />, label: 'السائقين' },
   { to: '/app/purchases', icon: <ShoppingCart className="h-4 w-4" />, label: 'المشتريات' },
+  { to: '/app/company-purchases', icon: <ShoppingBag className="h-4 w-4" />, label: 'مشتريات الشركة' },
   { to: '/app/analytics', icon: <BarChart3 className="h-4 w-4" />, label: 'التحليلات' },
   { to: '/app/reports', icon: <FileText className="h-4 w-4" />, label: 'التقارير' },
 ]

@@ -141,6 +141,7 @@ class SupabaseTable {
 
 // ── Table instances ──
 export const purchasesTable = new SupabaseTable('purchases')
+export const companyPurchasesTable = new SupabaseTable('company_purchases')
 export const driversTable = new SupabaseTable('drivers')
 export const restaurantsTable = new SupabaseTable('restaurants')
 export const directOrdersTable = new SupabaseTable('direct_orders')

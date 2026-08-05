@@ -41,6 +41,8 @@ import {
   Eye,
   Store,
   Calendar,
+  Receipt,
+  Wallet,
 } from 'lucide-react'
 import { useState, useMemo, useCallback } from 'react'
 import { formatNum, formatPriceFull, formatDate } from '@/lib/utils'
@@ -118,6 +120,8 @@ function ReportsPage() {
   const [dateTo, setDateTo] = useState('')
   const [typeFilter, setTypeFilter] = useState<OperationType | 'الكل'>('الكل')
   const [companySearch, setCompanySearch] = useState('')
+  const [companyDateFrom, setCompanyDateFrom] = useState('')
+  const [companyDateTo, setCompanyDateTo] = useState('')
   const [companyPreview, setCompanyPreview] = useState<string | null>(null)
 
   // Merge all data types
@@ -162,15 +166,47 @@ function ReportsPage() {
   )
   const totalInvoices = invoices.length
 
-  // Company purchases filter
+  // Company purchases filter (search + date range)
   const filteredCompany = useMemo(() => {
-    if (!companySearch.trim()) return companyPurchases
     const q = companySearch.trim().toLowerCase()
-    return companyPurchases.filter(
-      (p) =>
-        p.itemName?.toLowerCase().includes(q) || p.storeName?.toLowerCase().includes(q),
-    )
-  }, [companyPurchases, companySearch])
+    return companyPurchases.filter((p) => {
+      if (q && !p.itemName?.toLowerCase().includes(q) && !p.storeName?.toLowerCase().includes(q)) return false
+      if (companyDateFrom && p.purchaseDate < companyDateFrom) return false
+      if (companyDateTo && p.purchaseDate > companyDateTo) return false
+      return true
+    })
+  }, [companyPurchases, companySearch, companyDateFrom, companyDateTo])
+
+  const companyHasFilters = !!companySearch || !!companyDateFrom || !!companyDateTo
+
+  const clearCompanyFilters = () => {
+    setCompanySearch('')
+    setCompanyDateFrom('')
+    setCompanyDateTo('')
+  }
+
+  const companyTotal = useMemo(
+    () => filteredCompany.reduce((s, p) => s + (p.amount ?? 0), 0),
+    [filteredCompany],
+  )
+  const companyCount = filteredCompany.length
+  const companyStores = useMemo(
+    () => new Set(filteredCompany.map((p) => p.storeName)).size,
+    [filteredCompany],
+  )
+  const companyAvg = companyCount ? companyTotal / companyCount : 0
+
+  const companyStoreBreakdown = useMemo(() => {
+    const map = new Map<string, { store: string; count: number; total: number }>()
+    for (const p of filteredCompany) {
+      const key = p.storeName ?? '—'
+      const cur = map.get(key) ?? { store: key, count: 0, total: 0 }
+      cur.count += 1
+      cur.total += p.amount ?? 0
+      map.set(key, cur)
+    }
+    return [...map.values()].sort((a, b) => b.total - a.total)
+  }, [filteredCompany])
 
   // Filters
   const filtered = useMemo(() => {
@@ -270,6 +306,19 @@ function ReportsPage() {
     downloadCSV(buildCSV(purchaseHeaders, purchaseRows), `مشتريات_${new Date().toISOString().slice(0, 10)}.csv`)
     downloadCSV(buildCSV(companyHeaders, companyRows), `مشتريات_الشركة_${new Date().toISOString().slice(0, 10)}.csv`)
   }, [typeFilter])
+
+  // CSV export — company purchases only (respects section filters)
+  const handleCompanyExport = useCallback(() => {
+    const headers = ['التاريخ', 'السلعة', 'المحل', 'المبلغ', 'ملاحظات']
+    const rows = filteredCompany.map((p) => [
+      p.purchaseDate,
+      p.itemName,
+      p.storeName,
+      p.amount,
+      p.notes ?? '',
+    ].map(escapeCSV))
+    downloadCSV(buildCSV(headers, rows), `مشتريات_الشركة_${new Date().toISOString().slice(0, 10)}.csv`)
+  }, [filteredCompany])
 
   return (
     <PullToRefresh onRefresh={refreshAll}>
@@ -483,26 +532,107 @@ function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Company purchases section */}
+      {/* Company purchases report */}
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
             <ShoppingBag className="h-4 w-4 text-violet-600" />
-            المشتريات العامة للشركة
+            تقرير المشتريات العامة للشركة
           </CardTitle>
           {companyPurchases.length > 0 && (
-            <div className="relative">
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="بحث بالسلعة أو المحل..."
-                value={companySearch}
-                onChange={(e) => setCompanySearch(e.target.value)}
-                className="w-44 h-9 pr-8 text-xs text-right"
-              />
-            </div>
+            <Button variant="outline" size="sm" onClick={handleCompanyExport} className="gap-1.5 h-9 text-xs">
+              <Download className="h-3.5 w-3.5" />
+              تصدير CSV
+            </Button>
           )}
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-4 space-y-4">
+          {/* Section summary stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="border-violet-200 bg-violet-50/50">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+                  <ShoppingBag className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground">إجمالي المبلغ</p>
+                  <p className="text-sm font-bold text-violet-700 truncate">{formatPriceFull(companyTotal)}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-violet-200 bg-violet-50/50">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+                  <Receipt className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground">عدد العمليات</p>
+                  <p className="text-sm font-bold text-violet-700">{formatNum(companyCount)}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-violet-200 bg-violet-50/50">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+                  <Store className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground">عدد المحلات</p>
+                  <p className="text-sm font-bold text-violet-700">{formatNum(companyStores)}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-violet-200 bg-violet-50/50">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+                  <Wallet className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground">متوسط العملية</p>
+                  <p className="text-sm font-bold text-violet-700 truncate">{formatPriceFull(companyAvg)}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Section filters */}
+          {companyPurchases.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-end">
+              <div className="relative">
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="بحث بالسلعة أو المحل..."
+                  value={companySearch}
+                  onChange={(e) => setCompanySearch(e.target.value)}
+                  className="w-44 h-9 pr-8 text-xs text-right"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">من</span>
+                <Input
+                  type="date"
+                  value={companyDateFrom}
+                  onChange={(e) => setCompanyDateFrom(e.target.value)}
+                  className="w-36 h-9 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">إلى</span>
+                <Input
+                  type="date"
+                  value={companyDateTo}
+                  onChange={(e) => setCompanyDateTo(e.target.value)}
+                  className="w-36 h-9 text-xs"
+                />
+              </div>
+              {companyHasFilters && (
+                <Button variant="ghost" size="sm" onClick={clearCompanyFilters} className="h-9 gap-1 text-xs">
+                  <X className="h-3 w-3" />
+                  مسح
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Table */}
           {companyPurchases.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
@@ -515,7 +645,7 @@ function ReportsPage() {
             </div>
           ) : filteredCompany.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-              <p className="text-sm text-muted-foreground">لا توجد نتائج</p>
+              <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة للتصفية</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -526,6 +656,7 @@ function ReportsPage() {
                     <TableHead className="text-right">السلعة</TableHead>
                     <TableHead className="text-right">المحل</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">ملاحظات</TableHead>
                     <TableHead className="text-right">الفاتورة</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -547,6 +678,9 @@ function ReportsPage() {
                       </TableCell>
                       <TableCell className="font-medium text-sm">
                         {formatPriceFull(p.amount)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs max-w-[180px] truncate">
+                        {p.notes ?? '—'}
                       </TableCell>
                       <TableCell>
                         {p.invoiceImageUrl ? (
@@ -571,6 +705,39 @@ function ReportsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Store breakdown */}
+      {companyStoreBreakdown.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Store className="h-4 w-4 text-violet-600" />
+              الإنفاق حسب المحل
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            {companyStoreBreakdown.map(({ store, count, total }) => {
+              const pct = companyTotal ? (total / companyTotal) * 100 : 0
+              return (
+                <div key={store} className="space-y-1">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-medium truncate">{store}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatNum(count)} عملية · {formatPriceFull(total)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-violet-500/70"
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Company purchase image preview */}
       <Dialog open={!!companyPreview} onOpenChange={() => setCompanyPreview(null)}>

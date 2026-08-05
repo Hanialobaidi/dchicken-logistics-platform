@@ -62,6 +62,8 @@ export interface Purchase {
   ownerId: string
   createdAt: string
   chickenType: string
+  invoiceImageUrl: string | null
+  paymentMethod: string
 }
 
 export interface CompanyPurchase {

@@ -36,8 +36,13 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   Warehouse,
+  Upload,
+  X,
+  FileText,
+  Eye,
+  CreditCard,
 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { formatNum, formatPrice, formatDate } from '@/lib/utils'
 import {
   Select,
@@ -52,6 +57,17 @@ import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
 import { SearchInput } from '@/components/SearchInput'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { useRefreshAll } from '@/hooks/useRefreshAll'
+import { supabase } from '@/lib/supabase'
+
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'نقدي' },
+  { value: 'network', label: 'شبكة' },
+  { value: 'credit', label: 'آجل' },
+]
+
+function paymentLabel(m: string): string {
+  return PAYMENT_METHODS.find((pm) => pm.value === m)?.label ?? (m || '—')
+}
 
 export const Route = createFileRoute('/app/purchases')({
   ssr: false,
@@ -85,6 +101,10 @@ function PurchasesPage() {
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
+  const [invoicePreview, setInvoicePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const filteredPurchases = useMemo(() => {
     let result = purchases
@@ -116,7 +136,20 @@ function PurchasesPage() {
     setNotes('')
     setChickenType(CHICKEN_TYPES[0])
     setCustomChickenType('')
+    setPaymentMethod('cash')
+    setInvoiceFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     setDialogOpen(true)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) setInvoiceFile(file)
+  }
+
+  const removeFile = () => {
+    setInvoiceFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleSubmit = async () => {
@@ -133,6 +166,19 @@ function PurchasesPage() {
       if (chickenType === '__add__' && customChickenType.trim()) {
         await createChickenType.mutateAsync(customChickenType.trim())
       }
+
+      let invoiceImageUrl: string | undefined
+      if (invoiceFile) {
+        const ext = invoiceFile.name.split('.').pop()
+        const filePath = `farm-purchases/${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('invoices')
+          .upload(filePath, invoiceFile)
+        if (uploadError) throw new Error(uploadError.message)
+        const { data: urlData } = supabase.storage.from('invoices').getPublicUrl(filePath)
+        invoiceImageUrl = urlData.publicUrl
+      }
+
       await createPurchase.mutateAsync({
         purchaseDate,
         farmName: farmName.trim(),
@@ -140,6 +186,8 @@ function PurchasesPage() {
         pricePerKg: price,
         chickenType: finalChickenType,
         notes: notes.trim() || undefined,
+        paymentMethod,
+        invoiceImageUrl: invoiceImageUrl ?? null,
       })
       toast.success('تم إضافة عملية الشراء بنجاح — تم تحديث المخزون تلقائياً')
       setDialogOpen(false)
@@ -320,6 +368,8 @@ function PurchasesPage() {
                     <TableHead className="text-right">الكمية (كجم)</TableHead>
                     <TableHead className="text-right">سعر الكيلو (ريال)</TableHead>
                     <TableHead className="text-right">التكلفة الإجمالية</TableHead>
+                    <TableHead className="text-right">طريقة الدفع</TableHead>
+                    <TableHead className="text-right">الفاتورة</TableHead>
                     <TableHead className="w-[60px]" />
                   </TableRow>
                 </TableHeader>
@@ -349,6 +399,27 @@ function PurchasesPage() {
                       </TableCell>
                       <TableCell className="font-medium text-sm">
                         {formatPrice(p.totalCost)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        <span className="flex items-center gap-1.5">
+                          <CreditCard className="h-3 w-3 text-muted-foreground" />
+                          {paymentLabel(p.paymentMethod)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {p.invoiceImageUrl ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-primary"
+                            onClick={() => setInvoicePreview(p.invoiceImageUrl)}
+                            title="عرض صورة الفاتورة"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -466,6 +537,63 @@ function PurchasesPage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">طريقة الدفع</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger id="paymentMethod" className="h-11 text-right w-full">
+                  <SelectValue placeholder="اختر طريقة الدفع..." />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {PAYMENT_METHODS.map((pm) => (
+                    <SelectItem key={pm.value} value={pm.value}>
+                      {pm.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* File upload */}
+            <div className="space-y-1.5">
+              <Label className="text-sm flex items-center gap-1.5">
+                <Upload className="h-3.5 w-3.5" />
+                صورة الفاتورة
+              </Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                id="purchase-invoice"
+              />
+              {invoiceFile ? (
+                <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2.5">
+                  <span className="text-sm truncate flex-1 ml-2 flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                    {invoiceFile.name}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={removeFile}
+                    type="button"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <label
+                  htmlFor="purchase-invoice"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                >
+                  <Upload className="h-6 w-6" />
+                  <span className="text-xs">اضغط لاختيار صورة الفاتورة</span>
+                </label>
+              )}
+            </div>
+
             {/* Live total cost display */}
             {quantity > 0 && price > 0 && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
@@ -509,6 +637,30 @@ function PurchasesPage() {
               ) : (
                 'حفظ'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice image preview */}
+      <Dialog open={!!invoicePreview} onOpenChange={() => setInvoicePreview(null)}>
+        <DialogContent className="max-w-2xl gap-4">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center justify-end gap-2">
+              صورة الفاتورة
+              <FileText className="h-5 w-5 text-primary" />
+            </DialogTitle>
+          </DialogHeader>
+          {invoicePreview && (
+            <img
+              src={invoicePreview}
+              alt="فاتورة"
+              className="w-full rounded-lg border object-contain max-h-[70vh]"
+            />
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setInvoicePreview(null)} className="min-h-[44px] flex-1">
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>

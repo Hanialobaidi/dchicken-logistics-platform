@@ -63,6 +63,7 @@ interface MergedRow {
   totalPrice: number
   paymentMethod: string
   status: string
+  invoiceImageUrl: string | null
 }
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive'; label: string }> = {
@@ -123,6 +124,7 @@ function ReportsPage() {
   const [companyDateFrom, setCompanyDateFrom] = useState('')
   const [companyDateTo, setCompanyDateTo] = useState('')
   const [companyPreview, setCompanyPreview] = useState<string | null>(null)
+  const [orderInvoicePreview, setOrderInvoicePreview] = useState<string | null>(null)
 
   // Merge all data types
   const mergedData = useMemo((): MergedRow[] => {
@@ -137,6 +139,7 @@ function ReportsPage() {
       totalPrice: o.totalPrice ?? 0,
       paymentMethod: o.paymentMethod ?? 'cash',
       status: o.status,
+      invoiceImageUrl: o.invoiceImageUrl ?? null,
     }))
 
     const purchaseRows: MergedRow[] = purchases.map((p) => ({
@@ -148,8 +151,9 @@ function ReportsPage() {
       weight: p.quantityKg,
       pricePerKg: p.pricePerKg,
       totalPrice: p.totalCost,
-      paymentMethod: 'cash',
+      paymentMethod: p.paymentMethod ?? 'cash',
       status: 'delivered',
+      invoiceImageUrl: p.invoiceImageUrl ?? null,
     }))
 
     return [...orderRows, ...purchaseRows].sort(
@@ -242,7 +246,7 @@ function ReportsPage() {
     ])
 
     const orderHeaders = ['المطعم', 'السائق', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'الدفع', 'الحالة']
-    const purchaseHeaders = ['المزرعة', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'ملاحظات']
+    const purchaseHeaders = ['المزرعة', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'طريقة الدفع', 'ملاحظات']
     const companyHeaders = ['التاريخ', 'السلعة', 'المحل', 'المبلغ', 'ملاحظات']
 
     if (typeFilter === 'طلبية مباشرة') {
@@ -267,6 +271,7 @@ function ReportsPage() {
         p.quantityKg,
         p.pricePerKg,
         p.totalCost,
+        PAYMENT_LABELS[p.paymentMethod ?? 'cash'] ?? 'نقدي',
         p.notes ?? '',
       ].map(escapeCSV))
       downloadCSV(buildCSV(purchaseHeaders, rows), `مشتريات_${new Date().toISOString().slice(0, 10)}.csv`)
@@ -291,6 +296,7 @@ function ReportsPage() {
       p.quantityKg,
       p.pricePerKg,
       p.totalCost,
+      PAYMENT_LABELS[p.paymentMethod ?? 'cash'] ?? 'نقدي',
       p.notes ?? '',
     ].map(escapeCSV))
 
@@ -485,6 +491,8 @@ function ReportsPage() {
                     <TableHead className="text-right">الكمية</TableHead>
                     <TableHead className="text-right">سعر/كجم</TableHead>
                     <TableHead className="text-right">الإجمالي</TableHead>
+                    <TableHead className="text-right">الدفع</TableHead>
+                    <TableHead className="text-right">الفاتورة</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -519,6 +527,24 @@ function ReportsPage() {
                         <TableCell className="font-medium text-sm">
                           {row.totalPrice > 0 ? formatPriceFull(row.totalPrice) : '—'}
                         </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {PAYMENT_LABELS[row.paymentMethod] ?? row.paymentMethod ?? '—'}
+                        </TableCell>
+                        <TableCell>
+                          {row.invoiceImageUrl ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 gap-1 text-xs text-primary"
+                              onClick={() => setOrderInvoicePreview(row.invoiceImageUrl)}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              عرض
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={cfg.variant}>{cfg.label}</Badge>
                         </TableCell>
@@ -531,6 +557,30 @@ function ReportsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Order/purchase invoice image preview */}
+      <Dialog open={!!orderInvoicePreview} onOpenChange={() => setOrderInvoicePreview(null)}>
+        <DialogContent className="max-w-2xl gap-4">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center justify-end gap-2">
+              صورة الفاتورة
+              <FileText className="h-5 w-5 text-primary" />
+            </DialogTitle>
+          </DialogHeader>
+          {orderInvoicePreview && (
+            <img
+              src={orderInvoicePreview}
+              alt="فاتورة"
+              className="w-full rounded-lg border object-contain max-h-[70vh]"
+            />
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setOrderInvoicePreview(null)} className="min-h-[44px] flex-1">
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Company purchases report */}
       <Card>

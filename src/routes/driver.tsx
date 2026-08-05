@@ -55,7 +55,6 @@ import {
   Weight,
   Plus,
   FileText,
-  Upload,
   X,
   ClipboardList,
   Printer,
@@ -70,7 +69,7 @@ import {
   BarChart3,
   Warehouse,
 } from 'lucide-react'
-import { useCallback, useState, useRef, useEffect, useMemo, type ChangeEvent } from 'react'
+import { useCallback, useState, useRef, useEffect, useMemo } from 'react'
 
 type StopStatus = 'قيد الانتظار' | 'تم التسليم' | 'ملغي'
 
@@ -177,8 +176,6 @@ function DirectOrderDialog({
     () => [...CHICKEN_TYPES, ...customTypes.map((t) => t.name)],
     [customTypes],
   )
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10))
   const [restaurantMode, setRestaurantMode] = useState<'existing' | 'new'>('existing')
   const [selectedRestaurant, setSelectedRestaurant] = useState('')
@@ -190,7 +187,6 @@ function DirectOrderDialog({
   const [notes, setNotes] = useState('')
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Invoice preview state
@@ -236,24 +232,12 @@ function DirectOrderDialog({
     setNotes('')
     setChickenType(CHICKEN_TYPES[0])
     setCustomChickenType('')
-    setInvoiceFile(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleClose = () => {
     if (isSubmitting) return
     resetForm()
     onOpenChange(false)
-  }
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) setInvoiceFile(file)
-  }
-
-  const removeFile = () => {
-    setInvoiceFile(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleSubmit = async () => {
@@ -266,19 +250,6 @@ function DirectOrderDialog({
 
     setIsSubmitting(true)
     try {
-      let invoiceImageUrl: string | undefined
-
-      if (invoiceFile) {
-        const ext = invoiceFile.name.split('.').pop()
-        const filePath = `direct-orders/${driverId}-${Date.now()}.${ext}`
-        const { error: uploadError } = await supabase.storage
-          .from('invoices')
-          .upload(filePath, invoiceFile)
-        if (uploadError) throw new Error(uploadError.message)
-        const { data: urlData } = supabase.storage.from('invoices').getPublicUrl(filePath)
-        invoiceImageUrl = urlData.publicUrl
-      }
-
       const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
 
       // Save new chicken type if custom
@@ -292,7 +263,6 @@ function DirectOrderDialog({
         orderDate,
         restaurantName: name,
         actualWeight: weightNum,
-        invoiceImageUrl: invoiceImageUrl ?? undefined,
         notes: notes.trim() || undefined,
         status: 'pending',
         pricePerKg: priceNum,
@@ -589,47 +559,6 @@ function DirectOrderDialog({
                 </div>
               </div>
             )}
-
-            {/* File upload */}
-            <div className="space-y-1.5">
-              <Label className="text-sm flex items-center gap-1.5">
-                <Upload className="h-3.5 w-3.5" />
-                رفع صورة الفاتورة الورقية
-              </Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.pdf"
-                onChange={handleFileChange}
-                className="hidden"
-                id="direct-order-invoice"
-              />
-              {invoiceFile ? (
-                <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2.5">
-                  <span className="text-sm truncate flex-1 ml-2 flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-primary shrink-0" />
-                    {invoiceFile.name}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    onClick={removeFile}
-                    type="button"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ) : (
-                <label
-                  htmlFor="direct-order-invoice"
-                  className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                >
-                  <Upload className="h-6 w-6" />
-                  <span className="text-xs">اضغط لاختيار ملف</span>
-                </label>
-              )}
-            </div>
 
             {/* Notes */}
             <div className="space-y-1.5">

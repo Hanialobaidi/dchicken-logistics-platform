@@ -14,10 +14,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { useConfirmDelivery } from '@/hooks/useDriverTrip'
-import { supabase } from '@/lib/supabase'
 import { ScrollToTop } from '@/components/ScrollToTop'
-import { Store, Weight, FileText, Upload, X } from 'lucide-react'
-import { useState, useRef, type ChangeEvent } from 'react'
+import { Store, Weight } from 'lucide-react'
+import { useState } from 'react'
 
 interface DeliverySearch {
   stopId: string
@@ -28,46 +27,20 @@ interface DeliverySearch {
 function DeliveryDialog() {
   const navigate = useNavigate()
   const { stopId, name, targetWeight } = Route.useSearch()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const confirmDelivery = useConfirmDelivery()
 
   const [actualWeight, setActualWeight] = useState('')
   const [notes, setNotes] = useState('')
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) setInvoiceFile(file)
-  }
-
-  const removeFile = () => {
-    setInvoiceFile(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
 
   const handleSubmit = async () => {
     if (!actualWeight.trim() || !stopId) return
     setIsSubmitting(true)
 
     try {
-      let invoiceImageUrl: string | undefined
-
-      if (invoiceFile) {
-        const ext = invoiceFile.name.split('.').pop()
-        const filePath = `invoices/${stopId}-${Date.now()}.${ext}`
-        const { error: uploadError } = await supabase.storage
-          .from('invoices')
-          .upload(filePath, invoiceFile)
-        if (uploadError) throw new Error(uploadError.message)
-        const { data: urlData } = supabase.storage.from('invoices').getPublicUrl(filePath)
-        invoiceImageUrl = urlData.publicUrl
-      }
-
       await confirmDelivery.mutateAsync({
         tripRestaurantId: stopId,
         actualWeight: Number(actualWeight),
-        invoiceImageUrl,
         notes: notes.trim() || undefined,
       })
 
@@ -99,7 +72,7 @@ function DeliveryDialog() {
               <Store className="h-5 w-5 text-primary" />
             </DialogTitle>
             <DialogDescription className="text-right">
-              يرجى إدخال الكمية الفعلية ورفع صورة الفاتورة
+              يرجى إدخال الكمية الفعلية لتأكيد التسليم
             </DialogDescription>
           </DialogHeader>
 
@@ -134,47 +107,6 @@ function DeliveryDialog() {
                 onChange={(e) => setActualWeight(e.target.value)}
                 className="text-right h-11"
               />
-            </div>
-
-            {/* File upload */}
-            <div className="space-y-1.5">
-              <Label className="text-sm flex items-center gap-1.5">
-                <Upload className="h-3.5 w-3.5" />
-                رفع صورة الفاتورة
-              </Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.pdf"
-                onChange={handleFileChange}
-                className="hidden"
-                id="invoice-upload"
-              />
-              {invoiceFile ? (
-                <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2.5">
-                  <span className="text-sm truncate flex-1 ml-2 flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-primary shrink-0" />
-                    {invoiceFile.name}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    onClick={removeFile}
-                    type="button"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ) : (
-                <label
-                  htmlFor="invoice-upload"
-                  className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                >
-                  <Upload className="h-6 w-6" />
-                  <span className="text-xs">اضغط لاختيار ملف</span>
-                </label>
-              )}
             </div>
 
             {/* Notes */}

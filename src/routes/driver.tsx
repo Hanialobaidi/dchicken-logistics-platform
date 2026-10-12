@@ -294,6 +294,7 @@ function DirectOrderDialog({
           invoiceDate: orderDate,
           pdfUrl: undefined,
           paymentStatus,
+          chickenType: effectiveChickenType,
         })
       } catch (invoiceErr) {
         console.error('[NewOrder] Invoice creation failed:', invoiceErr)
@@ -909,6 +910,7 @@ function EditOrderDialog({
       invoiceDate: order.orderDate,
       pdfUrl: undefined,
       paymentStatus: order.paymentStatus,
+      chickenType: effectiveChickenType,
     })
 
     onSaved()

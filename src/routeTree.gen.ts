@@ -9,23 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DriverRouteImport } from './routes/driver'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as DriverReportRouteImport } from './routes/driver.report'
-import { Route as DriverDeliveryRouteImport } from './routes/driver.delivery'
-import { Route as AppRestaurantsRouteImport } from './routes/app.restaurants'
-import { Route as AppReportsRouteImport } from './routes/app.reports'
-import { Route as AppPurchasesRouteImport } from './routes/app.purchases'
-import { Route as AppDriversRouteImport } from './routes/app.drivers'
-import { Route as AppCompanyPurchasesRouteImport } from './routes/app.company-purchases'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
+import { Route as AppCompanyPurchasesRouteImport } from './routes/app.company-purchases'
+import { Route as AppDriversRouteImport } from './routes/app.drivers'
+import { Route as AppPurchasesRouteImport } from './routes/app.purchases'
+import { Route as AppReportsRouteImport } from './routes/app.reports'
+import { Route as AppRestaurantsRouteImport } from './routes/app.restaurants'
+import { Route as DriverDeliveryRouteImport } from './routes/driver.delivery'
+import { Route as DriverReportRouteImport } from './routes/driver.report'
 import { Route as InvoiceVerifyInvoiceNumberRouteImport } from './routes/invoice.verify.$invoiceNumber'
 
-const DriverRoute = DriverRouteImport.update({
-  id: '/driver',
-  path: '/driver',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -33,9 +33,9 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DriverRoute = DriverRouteImport.update({
+  id: '/driver',
+  path: '/driver',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -43,34 +43,9 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const DriverReportRoute = DriverReportRouteImport.update({
-  id: '/report',
-  path: '/report',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverDeliveryRoute = DriverDeliveryRouteImport.update({
-  id: '/delivery',
-  path: '/delivery',
-  getParentRoute: () => DriverRoute,
-} as any)
-const AppRestaurantsRoute = AppRestaurantsRouteImport.update({
-  id: '/restaurants',
-  path: '/restaurants',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsRoute = AppReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPurchasesRoute = AppPurchasesRouteImport.update({
-  id: '/purchases',
-  path: '/purchases',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDriversRoute = AppDriversRouteImport.update({
-  id: '/drivers',
-  path: '/drivers',
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCompanyPurchasesRoute = AppCompanyPurchasesRouteImport.update({
@@ -78,10 +53,35 @@ const AppCompanyPurchasesRoute = AppCompanyPurchasesRouteImport.update({
   path: '/company-purchases',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+const AppDriversRoute = AppDriversRouteImport.update({
+  id: '/drivers',
+  path: '/drivers',
   getParentRoute: () => AppRoute,
+} as any)
+const AppPurchasesRoute = AppPurchasesRouteImport.update({
+  id: '/purchases',
+  path: '/purchases',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRestaurantsRoute = AppRestaurantsRouteImport.update({
+  id: '/restaurants',
+  path: '/restaurants',
+  getParentRoute: () => AppRoute,
+} as any)
+const DriverDeliveryRoute = DriverDeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverReportRoute = DriverReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => DriverRoute,
 } as any)
 const InvoiceVerifyInvoiceNumberRoute =
   InvoiceVerifyInvoiceNumberRouteImport.update({
@@ -191,11 +191,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/driver': {
-      id: '/driver'
-      path: '/driver'
-      fullPath: '/driver'
-      preLoaderRoute: typeof DriverRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -205,11 +205,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/driver': {
+      id: '/driver'
+      path: '/driver'
+      fullPath: '/driver'
+      preLoaderRoute: typeof DriverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -219,46 +219,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/driver/report': {
-      id: '/driver/report'
-      path: '/report'
-      fullPath: '/driver/report'
-      preLoaderRoute: typeof DriverReportRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/delivery': {
-      id: '/driver/delivery'
-      path: '/delivery'
-      fullPath: '/driver/delivery'
-      preLoaderRoute: typeof DriverDeliveryRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/app/restaurants': {
-      id: '/app/restaurants'
-      path: '/restaurants'
-      fullPath: '/app/restaurants'
-      preLoaderRoute: typeof AppRestaurantsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/reports': {
-      id: '/app/reports'
-      path: '/reports'
-      fullPath: '/app/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/purchases': {
-      id: '/app/purchases'
-      path: '/purchases'
-      fullPath: '/app/purchases'
-      preLoaderRoute: typeof AppPurchasesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/drivers': {
-      id: '/app/drivers'
-      path: '/drivers'
-      fullPath: '/app/drivers'
-      preLoaderRoute: typeof AppDriversRouteImport
+    '/app/analytics': {
+      id: '/app/analytics'
+      path: '/analytics'
+      fullPath: '/app/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/company-purchases': {
@@ -268,12 +233,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompanyPurchasesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/analytics': {
-      id: '/app/analytics'
-      path: '/analytics'
-      fullPath: '/app/analytics'
-      preLoaderRoute: typeof AppAnalyticsRouteImport
+    '/app/drivers': {
+      id: '/app/drivers'
+      path: '/drivers'
+      fullPath: '/app/drivers'
+      preLoaderRoute: typeof AppDriversRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/app/purchases': {
+      id: '/app/purchases'
+      path: '/purchases'
+      fullPath: '/app/purchases'
+      preLoaderRoute: typeof AppPurchasesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/restaurants': {
+      id: '/app/restaurants'
+      path: '/restaurants'
+      fullPath: '/app/restaurants'
+      preLoaderRoute: typeof AppRestaurantsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/driver/delivery': {
+      id: '/driver/delivery'
+      path: '/delivery'
+      fullPath: '/driver/delivery'
+      preLoaderRoute: typeof DriverDeliveryRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/report': {
+      id: '/driver/report'
+      path: '/report'
+      fullPath: '/driver/report'
+      preLoaderRoute: typeof DriverReportRouteImport
+      parentRoute: typeof DriverRoute
     }
     '/invoice/verify/$invoiceNumber': {
       id: '/invoice/verify/$invoiceNumber'

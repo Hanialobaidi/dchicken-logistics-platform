@@ -13,7 +13,8 @@ export function createRouter() {
     scrollRestoration: true,
     defaultOnCatch: (error) => {
       // Silently swallow stale-route preload errors during HMR
-      if (error?.message?.includes('_nonReactive')) return
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes('_nonReactive')) return
       console.error('[Router]', error)
     },
   })

@@ -38,7 +38,7 @@ function InvoiceVerifyPage() {
     queryKey: ['verify-invoice', invoiceNumber],
     queryFn: async () => {
       const result = await invoicesTable.list<Invoice>({
-        select: 'id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,pdf_url,owner_id,created_at,chicken_type,payment_status,sale_unit,unit_size,pieces,price_per_piece',
+        select: 'id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,pdf_url,owner_id,created_at,chicken_type,payment_status,sale_unit,unit_size,pieces,price_per_piece,items',
         where: { invoiceNumber },
         limit: 1,
       })
@@ -58,6 +58,20 @@ function InvoiceVerifyPage() {
   const itemLabel = inv
     ? (isPiece && inv.unitSize ? `${inv.chickenType || 'دجاج مقطع'} - ${inv.unitSize}` : (inv.chickenType || 'شاورما مبرد (فريش)'))
     : ''
+  const pieceRows = inv && isPiece
+    ? (inv.items && inv.items.length > 0
+        ? inv.items
+        : [{
+            chickenType: inv.chickenType,
+            unitSize: inv.unitSize ?? null,
+            pieces: inv.pieces ?? 0,
+            pricePerPiece: inv.pricePerPiece ?? 0,
+          }])
+    : []
+  const rowLabel = (it: { chickenType: string; unitSize?: string | null }) => {
+    const t = it.chickenType || 'شاورما مبرد (فريش)'
+    return it.unitSize ? `${t} - ${it.unitSize}` : t
+  }
 
   return (
     <div dir="rtl" className="min-h-dvh bg-gradient-to-b from-emerald-50 to-white">
@@ -136,16 +150,25 @@ function InvoiceVerifyPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-dashed">
-                    <td className="py-2 text-right text-neutral-800">{itemLabel}</td>
-                    <td className="py-2 text-center text-neutral-800">
-                      {isPiece ? `${inv.pieces ?? 0} حبة` : `${inv.quantityKg} كجم`}
-                    </td>
-                    <td className="py-2 text-center text-neutral-800">
-                      {formatSAR(isPiece ? (inv.pricePerPiece ?? 0) : inv.pricePerKg)} ر.س
-                    </td>
-                    <td className="py-2 text-left font-semibold text-neutral-900">{formatSAR(totalAmount)} ر.س</td>
-                  </tr>
+                  {isPiece ? (
+                    pieceRows.map((it, i) => (
+                      <tr key={i} className="border-b border-dashed">
+                        <td className="py-2 text-right text-neutral-800">{rowLabel(it)}</td>
+                        <td className="py-2 text-center text-neutral-800">{it.pieces} حبة</td>
+                        <td className="py-2 text-center text-neutral-800">{formatSAR(Number(it.pricePerPiece) || 0)} ر.س</td>
+                        <td className="py-2 text-left font-semibold text-neutral-900">
+                          {formatSAR((Number(it.pieces) || 0) * (Number(it.pricePerPiece) || 0))} ر.س
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="border-b border-dashed">
+                      <td className="py-2 text-right text-neutral-800">{itemLabel}</td>
+                      <td className="py-2 text-center text-neutral-800">{inv.quantityKg} كجم</td>
+                      <td className="py-2 text-center text-neutral-800">{formatSAR(inv.pricePerKg)} ر.س</td>
+                      <td className="py-2 text-left font-semibold text-neutral-900">{formatSAR(totalAmount)} ر.س</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
 

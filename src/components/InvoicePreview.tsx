@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Printer, X } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useCompanySettings, DEFAULT_COMPANY_SETTINGS } from '@/hooks/useCompanySettings'
+import type { InvoiceItem } from '@/types'
 
 // Kept for backwards-compatibility; the live values come from company settings.
 const COMPANY = DEFAULT_COMPANY_SETTINGS
@@ -22,6 +23,7 @@ export interface InvoiceData {
   unitSize?: string
   pieces?: number
   pricePerPiece?: number
+  items?: InvoiceItem[]
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -61,8 +63,18 @@ export function InvoicePreview({
   const company = settings ?? COMPANY
 
   const isPiece = data.saleUnit === 'piece'
+  const pieceRows: InvoiceItem[] = isPiece
+    ? (data.items && data.items.length > 0
+        ? data.items
+        : [{
+            chickenType: data.chickenType || '',
+            unitSize: data.unitSize ?? null,
+            pieces: data.pieces ?? 0,
+            pricePerPiece: data.pricePerPiece ?? 0,
+          }])
+    : []
   const totalForTax = isPiece
-    ? (data.pieces ?? 0) * (data.pricePerPiece ?? 0)
+    ? pieceRows.reduce((sum, it) => sum + (Number(it.pieces) || 0) * (Number(it.pricePerPiece) || 0), 0)
     : data.quantityKg * data.pricePerKg
   const { totalAmount, subtotalBeforeTax, vatAmount } = computeTaxFromTotal(totalForTax)
 
@@ -71,9 +83,10 @@ export function InvoicePreview({
   }
 
   const chickenTypeLabel = data.chickenType || 'شاورما مبرد (فريش)'
-  const itemLabel = isPiece && data.unitSize
-    ? `${chickenTypeLabel} - ${data.unitSize}`
-    : chickenTypeLabel
+  const rowLabel = (it: InvoiceItem) => {
+    const t = it.chickenType || 'شاورما مبرد (فريش)'
+    return it.unitSize ? `${t} - ${it.unitSize}` : t
+  }
   const verifyUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''
     return `${window.location.origin}/invoice/verify/${data.invoiceNumber}`
@@ -186,16 +199,25 @@ export function InvoicePreview({
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ borderBottom: '1px dashed #ccc' }}>
-                  <td style={{ textAlign: 'right', padding: '3mm 2mm' }}>{itemLabel}</td>
-                  <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>
-                    {isPiece ? (data.pieces ?? 0) : data.quantityKg}
-                  </td>
-                  <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>
-                    {formatSAR(isPiece ? (data.pricePerPiece ?? 0) : data.pricePerKg)}
-                  </td>
-                  <td style={{ textAlign: 'left', padding: '3mm 2mm' }}>{formatSAR(totalAmount)}</td>
-                </tr>
+                {isPiece ? (
+                  pieceRows.map((it, i) => (
+                    <tr key={i} style={{ borderBottom: '1px dashed #ccc' }}>
+                      <td style={{ textAlign: 'right', padding: '3mm 2mm' }}>{rowLabel(it)}</td>
+                      <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>{it.pieces}</td>
+                      <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>{formatSAR(Number(it.pricePerPiece) || 0)}</td>
+                      <td style={{ textAlign: 'left', padding: '3mm 2mm' }}>
+                        {formatSAR((Number(it.pieces) || 0) * (Number(it.pricePerPiece) || 0))}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr style={{ borderBottom: '1px dashed #ccc' }}>
+                    <td style={{ textAlign: 'right', padding: '3mm 2mm' }}>{chickenTypeLabel}</td>
+                    <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>{data.quantityKg}</td>
+                    <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>{formatSAR(data.pricePerKg)}</td>
+                    <td style={{ textAlign: 'left', padding: '3mm 2mm' }}>{formatSAR(totalAmount)}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
 

@@ -39,9 +39,19 @@ import { InvoicePreview, computeTaxFromTotal } from '@/components/InvoicePreview
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import type { InvoiceData } from '@/components/InvoicePreview'
+import {
+  PieceItemsEditor,
+  emptyPieceItem,
+  pieceItemsTotal,
+  pieceItemsValid,
+  toInvoiceItems,
+  pieceItemsLabel,
+  pieceItemsFromRecord,
+} from '@/components/PieceItemsEditor'
+import type { PieceItemDraft } from '@/components/PieceItemsEditor'
 import { useRefreshAll } from '@/hooks/useRefreshAll'
 import { CHICKEN_TYPES } from '@/types'
-import type { DirectOrder, Invoice } from '@/types'
+import type { DirectOrder, Invoice, InvoiceItem } from '@/types'
 import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
 import { useChickenSizes, useCreateChickenSize } from '@/hooks/useChickenSizes'
 import { notifyAdminNewOrder } from '@/lib/notifyAdmin'
@@ -195,10 +205,7 @@ function DirectOrderDialog({
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
   const [saleUnit, setSaleUnit] = useState<'kg' | 'piece'>('kg')
-  const [chickenSize, setChickenSize] = useState<string>('')
-  const [customChickenSize, setCustomChickenSize] = useState('')
-  const [pieces, setPieces] = useState('')
-  const [pricePerPiece, setPricePerPiece] = useState('')
+  const [pieceItems, setPieceItems] = useState<PieceItemDraft[]>([emptyPieceItem()])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Invoice preview state
@@ -226,10 +233,7 @@ function DirectOrderDialog({
   const isPiece = saleUnit === 'piece'
   const weightNum = Number(actualWeight) || 0
   const priceNum = Number(pricePerKg) || 0
-  const piecesNum = Number(pieces) || 0
-  const pricePerPieceNum = Number(pricePerPiece) || 0
-  const effectiveSize = chickenSize === '__add__' ? customChickenSize.trim() : chickenSize
-  const totalPrice = isPiece ? piecesNum * pricePerPieceNum : weightNum * priceNum
+  const totalPrice = isPiece ? pieceItemsTotal(pieceItems) : weightNum * priceNum
   const taxFields = totalPrice > 0 ? computeTaxFromTotal(totalPrice) : null
 
   // Find selected restaurant's tax number
@@ -249,10 +253,7 @@ function DirectOrderDialog({
     setChickenType(CHICKEN_TYPES[0])
     setCustomChickenType('')
     setSaleUnit('kg')
-    setChickenSize('')
-    setCustomChickenSize('')
-    setPieces('')
-    setPricePerPiece('')
+    setPieceItems([emptyPieceItem()])
   }
 
   const handleClose = () => {
@@ -268,20 +269,37 @@ function DirectOrderDialog({
         : newRestaurantName.trim()
 
     const validAmount = isPiece
-      ? !!pieces.trim() && !!pricePerPiece && !!effectiveSize
+      ? pieceItemsValid(pieceItems)
       : !!actualWeight.trim() && !!pricePerKg
     if (!name || !validAmount) return
 
     setIsSubmitting(true)
     try {
-      const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
+      const invoiceItems = isPiece ? toInvoiceItems(pieceItems) : []
+      const effectiveChickenType = isPiece
+        ? pieceItemsLabel(invoiceItems)
+        : chickenType === '__add__' ? customChickenType.trim() : chickenType
+      const piecesSum = invoiceItems.reduce((sum, it) => sum + (Number(it.pieces) || 0), 0)
 
-      // Save new chicken type / size if custom
-      if (chickenType === '__add__' && customChickenType.trim()) {
+      // Save new chicken types / sizes if custom
+      if (!isPiece && chickenType === '__add__' && customChickenType.trim()) {
         await createChickenType.mutateAsync(customChickenType.trim())
       }
-      if (isPiece && chickenSize === '__add__' && customChickenSize.trim()) {
-        await createChickenSize.mutateAsync(customChickenSize.trim())
+      if (isPiece) {
+        const knownTypes = new Set(allChickenTypes.map((t) => t.trim().toLowerCase()))
+        const knownSizes = new Set(allChickenSizes.map((s) => s.trim().toLowerCase()))
+        for (const it of invoiceItems) {
+          const t = it.chickenType.trim().toLowerCase()
+          if (t && !knownTypes.has(t)) {
+            await createChickenType.mutateAsync(it.chickenType.trim())
+            knownTypes.add(t)
+          }
+          const s = (it.unitSize || '').trim().toLowerCase()
+          if (s && !knownSizes.has(s)) {
+            await createChickenSize.mutateAsync((it.unitSize || '').trim())
+            knownSizes.add(s)
+          }
+        }
       }
 
       const createdOrder = await createDirectOrder.mutateAsync({
@@ -299,9 +317,10 @@ function DirectOrderDialog({
         chickenType: effectiveChickenType,
         paymentStatus,
         saleUnit,
-        unitSize: isPiece ? effectiveSize : null,
-        pieces: isPiece ? piecesNum : 0,
-        pricePerPiece: isPiece ? pricePerPieceNum : 0,
+        unitSize: null,
+        pieces: isPiece ? piecesSum : 0,
+        pricePerPiece: 0,
+        items: invoiceItems,
       })
 
       // Save invoice record (linked to order)
@@ -327,9 +346,10 @@ function DirectOrderDialog({
           paymentStatus,
           chickenType: effectiveChickenType,
           saleUnit,
-          unitSize: isPiece ? effectiveSize : null,
-          pieces: isPiece ? piecesNum : 0,
-          pricePerPiece: isPiece ? pricePerPieceNum : 0,
+          unitSize: null,
+          pieces: isPiece ? piecesSum : 0,
+          pricePerPiece: 0,
+          items: invoiceItems,
         })
       } catch (invoiceErr) {
         console.error('[NewOrder] Invoice creation failed:', invoiceErr)
@@ -348,9 +368,10 @@ function DirectOrderDialog({
         paymentStatus,
         chickenType: effectiveChickenType,
         saleUnit,
-        unitSize: isPiece ? effectiveSize : undefined,
-        pieces: isPiece ? piecesNum : undefined,
-        pricePerPiece: isPiece ? pricePerPieceNum : undefined,
+        unitSize: undefined,
+        pieces: isPiece ? piecesSum : undefined,
+        pricePerPiece: undefined,
+        items: isPiece ? invoiceItems : undefined,
       })
 
       // Fire push notification to admin (best-effort, non-blocking)
@@ -491,67 +512,33 @@ function DirectOrderDialog({
               </div>
             </div>
 
-            {/* Chicken type */}
-            <div className="space-y-1.5">
-              <Label className="text-sm">نوع الدجاج <span className="text-destructive">*</span></Label>
-              <Select value={chickenType} onValueChange={setChickenType}>
-                <SelectTrigger className="h-11 text-right w-full">
-                  <SelectValue placeholder="اختر نوع الدجاج..." />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  {allChickenTypes.map((ct) => (
-                    <SelectItem key={ct} value={ct}>
-                      {ct}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="__add__" className="text-primary font-medium">+ إضافة نوع جديد</SelectItem>
-                </SelectContent>
-              </Select>
-              {chickenType === '__add__' && (
-                <Input
-                  placeholder="اكتب نوع الدجاج الجديد..."
-                  value={customChickenType}
-                  onChange={(e) => setCustomChickenType(e.target.value)}
-                  onBlur={async () => {
-                    if (customChickenType.trim()) {
-                      await createChickenType.mutateAsync(customChickenType.trim())
-                      setChickenType(customChickenType.trim())
-                      setCustomChickenType('')
-                    }
-                  }}
-                  className="text-right h-11"
-                  autoFocus
-                />
-              )}
-            </div>
-
-            {/* Chicken size (piece mode only) */}
-            {isPiece && (
+            {/* Chicken type (kg mode) */}
+            {!isPiece && (
               <div className="space-y-1.5">
-                <Label className="text-sm">حجم الدجاج <span className="text-destructive">*</span></Label>
-                <Select value={chickenSize} onValueChange={setChickenSize}>
+                <Label className="text-sm">نوع الدجاج <span className="text-destructive">*</span></Label>
+                <Select value={chickenType} onValueChange={setChickenType}>
                   <SelectTrigger className="h-11 text-right w-full">
-                    <SelectValue placeholder="اختر حجم الدجاج..." />
+                    <SelectValue placeholder="اختر نوع الدجاج..." />
                   </SelectTrigger>
                   <SelectContent align="end">
-                    {allChickenSizes.map((cs) => (
-                      <SelectItem key={cs} value={cs}>
-                        {cs}
+                    {allChickenTypes.map((ct) => (
+                      <SelectItem key={ct} value={ct}>
+                        {ct}
                       </SelectItem>
                     ))}
-                    <SelectItem value="__add__" className="text-primary font-medium">+ إضافة حجم جديد</SelectItem>
+                    <SelectItem value="__add__" className="text-primary font-medium">+ إضافة نوع جديد</SelectItem>
                   </SelectContent>
                 </Select>
-                {chickenSize === '__add__' && (
+                {chickenType === '__add__' && (
                   <Input
-                    placeholder="اكتب حجم الدجاج الجديد..."
-                    value={customChickenSize}
-                    onChange={(e) => setCustomChickenSize(e.target.value)}
+                    placeholder="اكتب نوع الدجاج الجديد..."
+                    value={customChickenType}
+                    onChange={(e) => setCustomChickenType(e.target.value)}
                     onBlur={async () => {
-                      if (customChickenSize.trim()) {
-                        await createChickenSize.mutateAsync(customChickenSize.trim())
-                        setChickenSize(customChickenSize.trim())
-                        setCustomChickenSize('')
+                      if (customChickenType.trim()) {
+                        await createChickenType.mutateAsync(customChickenType.trim())
+                        setChickenType(customChickenType.trim())
+                        setCustomChickenType('')
                       }
                     }}
                     className="text-right h-11"
@@ -561,35 +548,16 @@ function DirectOrderDialog({
               </div>
             )}
 
-            {/* Quantity + Price */}
+            {/* Piece items / kg quantity */}
             {isPiece ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="pieces" className="text-sm">عدد الحبات <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="pieces"
-                    type="number"
-                    step="1"
-                    min="0"
-                    placeholder="عدد الحبات..."
-                    value={pieces}
-                    onChange={(e) => setPieces(e.target.value)}
-                    className="text-right h-11"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="pricePerPiece" className="text-sm">سعر الحبة (ريال) <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="pricePerPiece"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="سعر الحبة..."
-                    value={pricePerPiece}
-                    onChange={(e) => setPricePerPiece(e.target.value)}
-                    className="text-right h-11"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">الأصناف <span className="text-destructive">*</span></Label>
+                <PieceItemsEditor
+                  items={pieceItems}
+                  onChange={setPieceItems}
+                  allChickenTypes={allChickenTypes}
+                  allChickenSizes={allChickenSizes}
+                />
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -731,7 +699,7 @@ function DirectOrderDialog({
               disabled={
                 isSubmitting ||
                 (isPiece
-                  ? (!pieces.trim() || !pricePerPiece || !effectiveSize)
+                  ? !pieceItemsValid(pieceItems)
                   : (!actualWeight.trim() || !pricePerKg)) ||
                 (restaurantMode === 'existing' && !selectedRestaurant) ||
                 (restaurantMode === 'new' && !newRestaurantName.trim())
@@ -807,6 +775,10 @@ function DirectOrderCard({
   const paymentLabel = PAYMENT_METHODS.find((p) => p.value === order.paymentMethod)?.label ?? order.paymentMethod
   const canModify = order.status === 'pending'
   const isPiece = order.saleUnit === 'piece'
+  const pieceItemCount = order.items?.length ?? 0
+  const singleItemSize = pieceItemCount === 1
+    ? order.items![0].unitSize
+    : (pieceItemCount === 0 ? order.unitSize : null)
   return (
     <div
       className={cn(
@@ -825,7 +797,8 @@ function DirectOrderCard({
             <p className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
               {isPiece ? <Package className="h-3 w-3" /> : <Weight className="h-3 w-3" />}
               {isPiece ? `${order.pieces ?? 0} حبة` : `${order.actualWeight} كجم`}
-              {isPiece && order.unitSize && <span className="mr-0.5">({order.unitSize})</span>}
+              {isPiece && pieceItemCount > 1 && <span className="mr-0.5">({pieceItemCount} أصناف)</span>}
+              {isPiece && pieceItemCount <= 1 && singleItemSize && <span className="mr-0.5">({singleItemSize})</span>}
               <span className="mx-0.5">·</span>
               {order.totalPrice > 0 && (
                 <>
@@ -888,6 +861,7 @@ function DirectOrderCard({
                 unitSize: inv.unitSize ?? undefined,
                 pieces: inv.pieces,
                 pricePerPiece: inv.pricePerPiece,
+                items: inv.items,
               })
               return
             }
@@ -913,6 +887,7 @@ function DirectOrderCard({
                 unitSize: found.unitSize ?? undefined,
                 pieces: found.pieces,
                 pricePerPiece: found.pricePerPiece,
+                items: found.items,
               })
             } else {
               onViewInvoice({
@@ -930,6 +905,7 @@ function DirectOrderCard({
                 unitSize: order.unitSize ?? undefined,
                 pieces: order.pieces,
                 pricePerPiece: order.pricePerPiece,
+                items: order.items,
               })
             }
           }}
@@ -970,6 +946,7 @@ function EditOrderDialog({
     unitSize?: string | null
     pieces?: number
     pricePerPiece?: number
+    items?: InvoiceItem[]
   } | null
   driverId: string
   driverName: string
@@ -994,10 +971,7 @@ function EditOrderDialog({
   const [saleUnit, setSaleUnit] = useState<'kg' | 'piece'>('kg')
   const [actualWeight, setActualWeight] = useState('')
   const [pricePerKg, setPricePerKg] = useState('')
-  const [chickenSize, setChickenSize] = useState('')
-  const [customChickenSize, setCustomChickenSize] = useState('')
-  const [pieces, setPieces] = useState('')
-  const [pricePerPiece, setPricePerPiece] = useState('')
+  const [pieceItems, setPieceItems] = useState<PieceItemDraft[]>([emptyPieceItem()])
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
@@ -1009,12 +983,7 @@ function EditOrderDialog({
       setSaleUnit(unit)
       setActualWeight(String(order.actualWeight || ''))
       setPricePerKg(String(order.pricePerKg || ''))
-      setPieces(String(order.pieces || ''))
-      setPricePerPiece(String(order.pricePerPiece || ''))
-      const size = order.unitSize || ''
-      const isKnownSize = allChickenSizes.includes(size)
-      setChickenSize(size && isKnownSize ? size : size ? '__add__' : '')
-      setCustomChickenSize(size && !isKnownSize ? size : '')
+      setPieceItems(unit === 'piece' ? pieceItemsFromRecord(order) : [emptyPieceItem()])
       setPaymentMethod(order.paymentMethod || 'cash')
       const isKnownType = allChickenTypes.includes(order.chickenType)
       setChickenType(isKnownType ? order.chickenType : '__add__')
@@ -1026,26 +995,46 @@ function EditOrderDialog({
   const isPiece = saleUnit === 'piece'
   const weightNum = Number(actualWeight) || 0
   const priceNum = Number(pricePerKg) || 0
-  const piecesNum = Number(pieces) || 0
-  const pricePerPieceNum = Number(pricePerPiece) || 0
-  const effectiveSize = chickenSize === '__add__' ? customChickenSize.trim() : chickenSize
-  const totalPrice = isPiece ? piecesNum * pricePerPieceNum : weightNum * priceNum
+  const totalPrice = isPiece ? pieceItemsTotal(pieceItems) : weightNum * priceNum
   const taxFields = totalPrice > 0 ? computeTaxFromTotal(totalPrice) : null
 
   const isSubmitting = updateOrder.isPending || createInvoice.isPending
 
-  const handleSubmit = async () => {
-    const validAmount = isPiece
-      ? !!pieces.trim() && !!pricePerPiece && !!effectiveSize
-      : !!actualWeight.trim() && !!pricePerKg
-    if (!order || !validAmount) return
-    const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
-    if (chickenType === '__add__' && customChickenType.trim()) {
+  const buildPieceData = async () => {
+    const invoiceItems = isPiece ? toInvoiceItems(pieceItems) : []
+    const effectiveChickenType = isPiece
+      ? pieceItemsLabel(invoiceItems)
+      : chickenType === '__add__' ? customChickenType.trim() : chickenType
+    const piecesSum = invoiceItems.reduce((sum, it) => sum + (Number(it.pieces) || 0), 0)
+
+    if (!isPiece && chickenType === '__add__' && customChickenType.trim()) {
       await createChickenType.mutateAsync(customChickenType.trim())
     }
-    if (isPiece && chickenSize === '__add__' && customChickenSize.trim()) {
-      await createChickenSize.mutateAsync(customChickenSize.trim())
+    if (isPiece) {
+      const knownTypes = new Set(allChickenTypes.map((t) => t.trim().toLowerCase()))
+      const knownSizes = new Set(allChickenSizes.map((s) => s.trim().toLowerCase()))
+      for (const it of invoiceItems) {
+        const t = it.chickenType.trim().toLowerCase()
+        if (t && !knownTypes.has(t)) {
+          await createChickenType.mutateAsync(it.chickenType.trim())
+          knownTypes.add(t)
+        }
+        const s = (it.unitSize || '').trim().toLowerCase()
+        if (s && !knownSizes.has(s)) {
+          await createChickenSize.mutateAsync((it.unitSize || '').trim())
+          knownSizes.add(s)
+        }
+      }
     }
+    return { invoiceItems, effectiveChickenType, piecesSum }
+  }
+
+  const handleSubmit = async () => {
+    const validAmount = isPiece
+      ? pieceItemsValid(pieceItems)
+      : !!actualWeight.trim() && !!pricePerKg
+    if (!order || !validAmount) return
+    const { invoiceItems, effectiveChickenType, piecesSum } = await buildPieceData()
 
     await updateOrder.mutateAsync({
       id: order.id,
@@ -1056,9 +1045,10 @@ function EditOrderDialog({
       chickenType: effectiveChickenType,
       notes: notes.trim() || null,
       saleUnit,
-      unitSize: isPiece ? effectiveSize : null,
-      pieces: isPiece ? piecesNum : 0,
-      pricePerPiece: isPiece ? pricePerPieceNum : 0,
+      unitSize: null,
+      pieces: isPiece ? piecesSum : 0,
+      pricePerPiece: 0,
+      items: invoiceItems,
     })
     toast.success('تم تعديل الطلبية')
     onSaved()
@@ -1067,16 +1057,10 @@ function EditOrderDialog({
 
   const handleIssueInvoice = async () => {
     const validAmount = isPiece
-      ? !!pieces.trim() && !!pricePerPiece && !!effectiveSize
+      ? pieceItemsValid(pieceItems)
       : !!actualWeight.trim() && !!pricePerKg
     if (!order || !validAmount) return
-    const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
-    if (chickenType === '__add__' && customChickenType.trim()) {
-      await createChickenType.mutateAsync(customChickenType.trim())
-    }
-    if (isPiece && chickenSize === '__add__' && customChickenSize.trim()) {
-      await createChickenSize.mutateAsync(customChickenSize.trim())
-    }
+    const { invoiceItems, effectiveChickenType, piecesSum } = await buildPieceData()
 
     await updateOrder.mutateAsync({
       id: order.id,
@@ -1087,9 +1071,10 @@ function EditOrderDialog({
       chickenType: effectiveChickenType,
       notes: notes.trim() || null,
       saleUnit,
-      unitSize: isPiece ? effectiveSize : null,
-      pieces: isPiece ? piecesNum : 0,
-      pricePerPiece: isPiece ? pricePerPieceNum : 0,
+      unitSize: null,
+      pieces: isPiece ? piecesSum : 0,
+      pricePerPiece: 0,
+      items: invoiceItems,
     })
 
     const invoiceNum = `INV-${Date.now().toString(36).toUpperCase()}`
@@ -1113,9 +1098,10 @@ function EditOrderDialog({
       paymentStatus: order.paymentStatus,
       chickenType: effectiveChickenType,
       saleUnit,
-      unitSize: isPiece ? effectiveSize : null,
-      pieces: isPiece ? piecesNum : 0,
-      pricePerPiece: isPiece ? pricePerPieceNum : 0,
+      unitSize: null,
+      pieces: isPiece ? piecesSum : 0,
+      pricePerPiece: 0,
+      items: invoiceItems,
     })
 
     onSaved()
@@ -1133,9 +1119,10 @@ function EditOrderDialog({
       paymentStatus: order.paymentStatus as 'paid' | 'unpaid',
       chickenType: effectiveChickenType,
       saleUnit,
-      unitSize: isPiece ? effectiveSize : undefined,
-      pieces: isPiece ? piecesNum : undefined,
-      pricePerPiece: isPiece ? pricePerPieceNum : undefined,
+      unitSize: undefined,
+      pieces: isPiece ? piecesSum : undefined,
+      pricePerPiece: undefined,
+      items: isPiece ? invoiceItems : undefined,
     })
 
     toast.success('تم تعديل الطلبية وإصدار الفاتورة')
@@ -1182,60 +1169,30 @@ function EditOrderDialog({
               </button>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm">نوع الدجاج</Label>
-            <Select value={chickenType} onValueChange={setChickenType}>
-              <SelectTrigger className="h-11 text-right w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {allChickenTypes.map((ct) => (
-                  <SelectItem key={ct} value={ct}>{ct}</SelectItem>
-                ))}
-                <SelectItem value="__add__" className="text-primary font-medium">+ إضافة نوع جديد</SelectItem>
-              </SelectContent>
-            </Select>
-            {chickenType === '__add__' && (
-              <Input
-                placeholder="اكتب نوع الدجاج الجديد..."
-                value={customChickenType}
-                onChange={(e) => setCustomChickenType(e.target.value)}
-                onBlur={async () => {
-                  if (customChickenType.trim()) {
-                    await createChickenType.mutateAsync(customChickenType.trim())
-                    setChickenType(customChickenType.trim())
-                    setCustomChickenType('')
-                  }
-                }}
-                className="text-right h-11"
-                autoFocus
-              />
-            )}
-          </div>
-          {isPiece && (
+          {!isPiece && (
             <div className="space-y-1.5">
-              <Label className="text-sm">حجم الدجاج</Label>
-              <Select value={chickenSize} onValueChange={setChickenSize}>
+              <Label className="text-sm">نوع الدجاج</Label>
+              <Select value={chickenType} onValueChange={setChickenType}>
                 <SelectTrigger className="h-11 text-right w-full">
-                  <SelectValue placeholder="اختر حجم الدجاج..." />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent align="end">
-                  {allChickenSizes.map((cs) => (
-                    <SelectItem key={cs} value={cs}>{cs}</SelectItem>
+                  {allChickenTypes.map((ct) => (
+                    <SelectItem key={ct} value={ct}>{ct}</SelectItem>
                   ))}
-                  <SelectItem value="__add__" className="text-primary font-medium">+ إضافة حجم جديد</SelectItem>
+                  <SelectItem value="__add__" className="text-primary font-medium">+ إضافة نوع جديد</SelectItem>
                 </SelectContent>
               </Select>
-              {chickenSize === '__add__' && (
+              {chickenType === '__add__' && (
                 <Input
-                  placeholder="اكتب حجم الدجاج الجديد..."
-                  value={customChickenSize}
-                  onChange={(e) => setCustomChickenSize(e.target.value)}
+                  placeholder="اكتب نوع الدجاج الجديد..."
+                  value={customChickenType}
+                  onChange={(e) => setCustomChickenType(e.target.value)}
                   onBlur={async () => {
-                    if (customChickenSize.trim()) {
-                      await createChickenSize.mutateAsync(customChickenSize.trim())
-                      setChickenSize(customChickenSize.trim())
-                      setCustomChickenSize('')
+                    if (customChickenType.trim()) {
+                      await createChickenType.mutateAsync(customChickenType.trim())
+                      setChickenType(customChickenType.trim())
+                      setCustomChickenType('')
                     }
                   }}
                   className="text-right h-11"
@@ -1245,29 +1202,14 @@ function EditOrderDialog({
             </div>
           )}
           {isPiece ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-sm">عدد الحبات</Label>
-                <Input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={pieces}
-                  onChange={(e) => setPieces(e.target.value)}
-                  className="text-right h-11"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">سعر الحبة (ريال)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={pricePerPiece}
-                  onChange={(e) => setPricePerPiece(e.target.value)}
-                  className="text-right h-11"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">الأصناف</Label>
+              <PieceItemsEditor
+                items={pieceItems}
+                onChange={setPieceItems}
+                allChickenTypes={allChickenTypes}
+                allChickenSizes={allChickenSizes}
+              />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
@@ -1353,7 +1295,7 @@ function EditOrderDialog({
             disabled={
               isSubmitting ||
               (isPiece
-                ? (!pieces.trim() || !pricePerPiece || !effectiveSize)
+                ? !pieceItemsValid(pieceItems)
                 : (!actualWeight.trim() || !pricePerKg))
             }
             className="flex-1 gap-2"
@@ -1365,7 +1307,7 @@ function EditOrderDialog({
             disabled={
               isSubmitting ||
               (isPiece
-                ? (!pieces.trim() || !pricePerPiece || !effectiveSize)
+                ? !pieceItemsValid(pieceItems)
                 : (!actualWeight.trim() || !pricePerKg))
             }
             className="flex-1 gap-2"
@@ -1387,7 +1329,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
   const { data: directOrders = [] } = useQuery({
     queryKey: ['directOrders', { driverId }],
     queryFn: () => directOrdersTable.list<DirectOrder>({
-      select: 'id, restaurant_name, actual_weight, status, price_per_kg, payment_method, total_price, chicken_type, order_date, created_at, sale_unit, unit_size, pieces, price_per_piece',
+      select: 'id, restaurant_name, actual_weight, status, price_per_kg, payment_method, total_price, chicken_type, order_date, created_at, sale_unit, unit_size, pieces, price_per_piece, items',
       where: { driverId },
       orderBy: { createdAt: 'desc' },
       limit: 100,
@@ -1666,7 +1608,7 @@ function DriverDashboard() {
   const { data: directOrders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ['directOrders', { driverId: effectiveDriverId }],
     queryFn: () => directOrdersTable.list<DirectOrder>({
-      select: 'id, driver_id, restaurant_name, actual_weight, notes, status, created_at, price_per_kg, payment_method, total_price, restaurant_tax_number, chicken_type, payment_status, order_date, driver_name, invoice_image_url, owner_id, sale_unit, unit_size, pieces, price_per_piece',
+      select: 'id, driver_id, restaurant_name, actual_weight, notes, status, created_at, price_per_kg, payment_method, total_price, restaurant_tax_number, chicken_type, payment_status, order_date, driver_name, invoice_image_url, owner_id, sale_unit, unit_size, pieces, price_per_piece, items',
       where: { driverId: effectiveDriverId },
       orderBy: { createdAt: 'desc' },
       limit: 100,
@@ -1677,7 +1619,7 @@ function DriverDashboard() {
   const { data: allInvoices = [] } = useQuery({
     queryKey: ['invoices', { driverId: effectiveDriverId }],
     queryFn: () => invoicesTable.list<Invoice>({
-      select: 'id, order_id, invoice_number, invoice_date, restaurant_name, restaurant_tax_number, driver_name, quantity_kg, price_per_kg, payment_method, payment_status, chicken_type, sale_unit, unit_size, pieces, price_per_piece',
+      select: 'id, order_id, invoice_number, invoice_date, restaurant_name, restaurant_tax_number, driver_name, quantity_kg, price_per_kg, payment_method, payment_status, chicken_type, sale_unit, unit_size, pieces, price_per_piece, items',
       where: { driverId: effectiveDriverId },
       orderBy: { createdAt: 'desc' },
       limit: 100,

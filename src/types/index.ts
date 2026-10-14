@@ -98,6 +98,13 @@ export interface ChickenSize {
 
 export type SaleUnit = 'kg' | 'piece'
 
+export interface InvoiceItem {
+  chickenType: string
+  unitSize?: string | null
+  pieces: number
+  pricePerPiece: number
+}
+
 export interface DirectOrder {
   id: string
   driverId: string
@@ -120,6 +127,7 @@ export interface DirectOrder {
   unitSize?: string | null
   pieces?: number
   pricePerPiece?: number
+  items?: InvoiceItem[]
 }
 
 export interface Invoice {
@@ -148,6 +156,7 @@ export interface Invoice {
   unitSize?: string | null
   pieces?: number
   pricePerPiece?: number
+  items?: InvoiceItem[]
 }
 
 export type UserRole = 'admin' | 'driver' | null

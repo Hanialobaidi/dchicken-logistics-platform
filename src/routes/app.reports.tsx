@@ -103,6 +103,7 @@ function invoiceDataFromRecord(inv: Invoice): InvoiceData {
     unitSize: inv.unitSize ?? undefined,
     pieces: inv.pieces,
     pricePerPiece: inv.pricePerPiece,
+    items: inv.items,
   }
 }
 

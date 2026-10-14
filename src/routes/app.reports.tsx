@@ -65,6 +65,9 @@ interface MergedRow {
   paymentMethod: string
   status: string
   invoiceImageUrl: string | null
+  saleUnit?: 'kg' | 'piece'
+  pieces?: number
+  unitSize?: string | null
 }
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive'; label: string }> = {
@@ -96,6 +99,10 @@ function invoiceDataFromRecord(inv: Invoice): InvoiceData {
     paymentMethod: inv.paymentMethod,
     paymentStatus: inv.paymentStatus === 'paid' ? 'paid' : 'unpaid',
     chickenType: inv.chickenType || undefined,
+    saleUnit: inv.saleUnit,
+    unitSize: inv.unitSize ?? undefined,
+    pieces: inv.pieces,
+    pricePerPiece: inv.pricePerPiece,
   }
 }
 
@@ -168,6 +175,9 @@ function ReportsPage() {
       paymentMethod: o.paymentMethod ?? 'cash',
       status: o.status,
       invoiceImageUrl: o.invoiceImageUrl ?? null,
+      saleUnit: o.saleUnit,
+      pieces: o.pieces,
+      unitSize: o.unitSize ?? null,
     }))
 
     const purchaseRows: MergedRow[] = purchases.map((p) => ({
@@ -273,7 +283,7 @@ function ReportsPage() {
       companyPurchasesTable.list<CompanyPurchase>({ orderBy: { purchaseDate: 'desc' }, limit: 500 }),
     ])
 
-    const orderHeaders = ['المطعم', 'السائق', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'الدفع', 'الحالة']
+    const orderHeaders = ['المطعم', 'السائق', 'التاريخ', 'الكمية', 'السعر', 'الإجمالي', 'الدفع', 'الحالة']
     const purchaseHeaders = ['المزرعة', 'التاريخ', 'الكمية (كجم)', 'سعر/كجم', 'الإجمالي', 'طريقة الدفع', 'ملاحظات']
     const companyHeaders = ['التاريخ', 'السلعة', 'المحل', 'المبلغ', 'ملاحظات']
 
@@ -282,8 +292,8 @@ function ReportsPage() {
         o.restaurantName,
         o.driverName,
         o.orderDate,
-        o.actualWeight,
-        o.pricePerKg ?? 0,
+        o.saleUnit === 'piece' ? `${o.pieces ?? 0} حبة` : `${o.actualWeight} كجم`,
+        o.saleUnit === 'piece' ? (o.pricePerPiece ?? 0) : (o.pricePerKg ?? 0),
         o.totalPrice ?? 0,
         PAYMENT_LABELS[o.paymentMethod ?? 'cash'] ?? 'نقدي',
         o.status === 'delivered' ? 'تم التسليم' : 'قيد الانتظار',
@@ -311,8 +321,8 @@ function ReportsPage() {
       o.restaurantName,
       o.driverName,
       o.orderDate,
-      o.actualWeight,
-      o.pricePerKg ?? 0,
+      o.saleUnit === 'piece' ? `${o.pieces ?? 0} حبة` : `${o.actualWeight} كجم`,
+      o.saleUnit === 'piece' ? (o.pricePerPiece ?? 0) : (o.pricePerKg ?? 0),
       o.totalPrice ?? 0,
       PAYMENT_LABELS[o.paymentMethod ?? 'cash'] ?? 'نقدي',
       o.status === 'delivered' ? 'تم التسليم' : 'قيد الانتظار',
@@ -548,7 +558,9 @@ function ReportsPage() {
                         <TableCell className="text-muted-foreground text-sm">
                           {row.date ? formatDate(row.date) : '—'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{row.weight} كجم</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {row.saleUnit === 'piece' ? `${row.pieces ?? 0} حبة` : `${row.weight} كجم`}
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {row.pricePerKg > 0 ? `${row.pricePerKg} ر.س` : '—'}
                         </TableCell>

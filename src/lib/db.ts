@@ -149,6 +149,8 @@ export const invoicesTable = new SupabaseTable('invoices')
 export const tripsTable = new SupabaseTable('trips')
 export const tripRestaurantsTable = new SupabaseTable('trip_restaurants')
 export const chickenTypesTable = new SupabaseTable('chicken_types')
+export const chickenSizesTable = new SupabaseTable('chicken_sizes')
+export const companySettingsTable = new SupabaseTable('company_settings')
 
 export function cleanData(data: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {}

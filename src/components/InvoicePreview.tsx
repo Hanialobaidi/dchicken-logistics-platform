@@ -2,14 +2,10 @@ import { useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Printer, X } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
+import { useCompanySettings, DEFAULT_COMPANY_SETTINGS } from '@/hooks/useCompanySettings'
 
-const COMPANY = {
-  name: 'شركة آفاق الرغد للدواجن',
-  taxNumber: '311648304500003',
-  cr: '7054494799',
-  address: 'حي النزهة، جدة',
-  phones: '0533632350 / 0575759184',
-}
+// Kept for backwards-compatibility; the live values come from company settings.
+const COMPANY = DEFAULT_COMPANY_SETTINGS
 
 export interface InvoiceData {
   invoiceNumber: string
@@ -22,6 +18,10 @@ export interface InvoiceData {
   paymentMethod: string
   paymentStatus: 'paid' | 'unpaid'
   chickenType?: string
+  saleUnit?: 'kg' | 'piece'
+  unitSize?: string
+  pieces?: number
+  pricePerPiece?: number
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -39,11 +39,14 @@ function formatSAR(value: number): string {
   return value.toFixed(2)
 }
 
-export function computeTaxFields(quantityKg: number, pricePerKg: number) {
-  const totalAmount = quantityKg * pricePerKg
+export function computeTaxFromTotal(totalAmount: number) {
   const subtotalBeforeTax = totalAmount / 1.15
   const vatAmount = totalAmount - subtotalBeforeTax
   return { totalAmount, subtotalBeforeTax, vatAmount }
+}
+
+export function computeTaxFields(quantityKg: number, pricePerKg: number) {
+  return computeTaxFromTotal(quantityKg * pricePerKg)
 }
 
 export function InvoicePreview({
@@ -54,16 +57,23 @@ export function InvoicePreview({
   onClose: () => void
 }) {
   const printRef = useRef<HTMLDivElement>(null)
-  const { totalAmount, subtotalBeforeTax, vatAmount } = computeTaxFields(
-    data.quantityKg,
-    data.pricePerKg,
-  )
+  const { data: settings } = useCompanySettings()
+  const company = settings ?? COMPANY
+
+  const isPiece = data.saleUnit === 'piece'
+  const totalForTax = isPiece
+    ? (data.pieces ?? 0) * (data.pricePerPiece ?? 0)
+    : data.quantityKg * data.pricePerKg
+  const { totalAmount, subtotalBeforeTax, vatAmount } = computeTaxFromTotal(totalForTax)
 
   const handlePrint = () => {
     window.print()
   }
 
   const chickenTypeLabel = data.chickenType || 'شاورما مبرد (فريش)'
+  const itemLabel = isPiece && data.unitSize
+    ? `${chickenTypeLabel} - ${data.unitSize}`
+    : chickenTypeLabel
   const verifyUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''
     return `${window.location.origin}/invoice/verify/${data.invoiceNumber}`
@@ -114,13 +124,13 @@ export function InvoicePreview({
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: '4mm' }}>
               <div style={{ fontSize: '18pt', fontWeight: 800, marginBottom: '2mm', color: '#1a1a1a' }}>
-                {COMPANY.name}
+                {company.name}
               </div>
               <div style={{ fontSize: '9pt', color: '#444', marginBottom: '1mm' }}>
-                الرقم الضريبي: {COMPANY.taxNumber} | السجل التجاري: {COMPANY.cr}
+                الرقم الضريبي: {company.taxNumber} | السجل التجاري: {company.cr}
               </div>
               <div style={{ fontSize: '9pt', color: '#444' }}>
-                العنوان: {COMPANY.address} | هاتف: {COMPANY.phones}
+                العنوان: {company.address} | هاتف: {company.phones}
               </div>
             </div>
 
@@ -169,17 +179,21 @@ export function InvoicePreview({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9pt', marginBottom: '4mm' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #000', backgroundColor: '#f5f5f5' }}>
-                  <th style={{ textAlign: 'right', padding: '3mm 2mm', fontWeight: 700 }}>الوصف</th>
-                  <th style={{ textAlign: 'center', padding: '3mm 2mm', fontWeight: 700 }}>الكمية (كجم)</th>
-                  <th style={{ textAlign: 'center', padding: '3mm 2mm', fontWeight: 700 }}>سعر الكيلو (ر.س)</th>
+                  <th style={{ textAlign: 'right', padding: '3mm 2mm', fontWeight: 700 }}>{isPiece ? 'النوع' : 'الوصف'}</th>
+                  <th style={{ textAlign: 'center', padding: '3mm 2mm', fontWeight: 700 }}>{isPiece ? 'الكمية (حبة)' : 'الكمية (كجم)'}</th>
+                  <th style={{ textAlign: 'center', padding: '3mm 2mm', fontWeight: 700 }}>{isPiece ? 'السعر' : 'سعر الكيلو (ر.س)'}</th>
                   <th style={{ textAlign: 'left', padding: '3mm 2mm', fontWeight: 700 }}>المجموع (ر.س)</th>
                 </tr>
               </thead>
               <tbody>
                 <tr style={{ borderBottom: '1px dashed #ccc' }}>
-                  <td style={{ textAlign: 'right', padding: '3mm 2mm' }}>{chickenTypeLabel}</td>
-                  <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>{data.quantityKg}</td>
-                  <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>{formatSAR(data.pricePerKg)}</td>
+                  <td style={{ textAlign: 'right', padding: '3mm 2mm' }}>{itemLabel}</td>
+                  <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>
+                    {isPiece ? (data.pieces ?? 0) : data.quantityKg}
+                  </td>
+                  <td style={{ textAlign: 'center', padding: '3mm 2mm' }}>
+                    {formatSAR(isPiece ? (data.pricePerPiece ?? 0) : data.pricePerKg)}
+                  </td>
                   <td style={{ textAlign: 'left', padding: '3mm 2mm' }}>{formatSAR(totalAmount)}</td>
                 </tr>
               </tbody>

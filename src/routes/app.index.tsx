@@ -189,7 +189,7 @@ function DashboardHome() {
                       <div className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
                         <span>{order.driverName}</span>
                         <span>·</span>
-                        <span>{order.actualWeight} كجم</span>
+                        <span>{order.saleUnit === 'piece' ? `${order.pieces ?? 0} حبة` : `${order.actualWeight} كجم`}</span>
                         {order.totalPrice > 0 && (
                           <>
                             <span>·</span>
@@ -290,7 +290,7 @@ function KpiCard({
   )
 }
 
-function RecentDeliveries({ directOrders }: { directOrders: { id: string; driverName: string; restaurantName: string; actualWeight: number; totalPrice: number; chickenType: string; orderDate: string; status: string; createdAt: string }[] }) {
+function RecentDeliveries({ directOrders }: { directOrders: { id: string; driverName: string; restaurantName: string; actualWeight: number; totalPrice: number; chickenType: string; orderDate: string; status: string; createdAt: string; saleUnit?: 'kg' | 'piece'; pieces?: number }[] }) {
   const now = Date.now()
   const delivered = directOrders
     .filter((o) => o.status === 'delivered' && (now - new Date(o.createdAt).getTime()) < ONE_DAY_MS)
@@ -323,7 +323,7 @@ function RecentDeliveries({ directOrders }: { directOrders: { id: string; driver
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{d.driverName}</span>
                   <span>·</span>
-                  <span>{d.actualWeight} كجم</span>
+                  <span>{d.saleUnit === 'piece' ? `${d.pieces ?? 0} حبة` : `${d.actualWeight} كجم`}</span>
                   {d.totalPrice > 0 && (
                     <>
                       <span>·</span>

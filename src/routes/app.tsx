@@ -22,6 +22,7 @@ import {
   Sun,
   BarChart3,
   ShoppingBag,
+  Settings,
 } from 'lucide-react'
 import { useState, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItemDef[] = [
   { to: '/app/company-purchases', icon: <ShoppingBag className="h-4 w-4" />, label: 'مشتريات الشركة' },
   { to: '/app/analytics', icon: <BarChart3 className="h-4 w-4" />, label: 'التحليلات' },
   { to: '/app/reports', icon: <FileText className="h-4 w-4" />, label: 'التقارير' },
+  { to: '/app/settings', icon: <Settings className="h-4 w-4" />, label: 'إعدادات الشركة' },
 ]
 
 function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: boolean }) {

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { invoicesTable } from '@/lib/db'
-import { COMPANY } from '@/components/InvoicePreview'
+import { useCompanySettings, DEFAULT_COMPANY_SETTINGS } from '@/hooks/useCompanySettings'
 import { formatDate } from '@/lib/utils'
 import { ShieldCheck, XCircle, Loader2 } from 'lucide-react'
 import type { Invoice } from '@/types'
@@ -31,12 +31,14 @@ export const Route = createFileRoute('/invoice/verify/$invoiceNumber')({
 
 function InvoiceVerifyPage() {
   const { invoiceNumber } = Route.useParams()
+  const { data: settings } = useCompanySettings()
+  const COMPANY = settings ?? DEFAULT_COMPANY_SETTINGS
 
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['verify-invoice', invoiceNumber],
     queryFn: async () => {
       const result = await invoicesTable.list<Invoice>({
-        select: 'id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,pdf_url,owner_id,created_at,chicken_type,payment_status',
+        select: 'id,invoice_number,order_id,order_type,restaurant_name,restaurant_tax_number,driver_name,driver_id,item_description,quantity_kg,price_per_kg,subtotal_before_tax,vat_amount,total_amount,payment_method,invoice_date,pdf_url,owner_id,created_at,chicken_type,payment_status,sale_unit,unit_size,pieces,price_per_piece',
         where: { invoiceNumber },
         limit: 1,
       })
@@ -49,9 +51,13 @@ function InvoiceVerifyPage() {
   })
 
   const inv = invoice?.[0]
+  const isPiece = inv?.saleUnit === 'piece'
   const totalAmount = inv ? (inv.totalAmount ?? inv.quantityKg * inv.pricePerKg) : 0
   const subtotalBeforeTax = inv ? (inv.subtotalBeforeTax ?? totalAmount / 1.15) : 0
   const vatAmount = inv ? (inv.vatAmount ?? totalAmount - subtotalBeforeTax) : 0
+  const itemLabel = inv
+    ? (isPiece && inv.unitSize ? `${inv.chickenType || 'دجاج مقطع'} - ${inv.unitSize}` : (inv.chickenType || 'شاورما مبرد (فريش)'))
+    : ''
 
   return (
     <div dir="rtl" className="min-h-dvh bg-gradient-to-b from-emerald-50 to-white">
@@ -123,17 +129,21 @@ function InvoiceVerifyPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-[11px] text-neutral-500">
-                    <th className="text-right py-2 font-medium">الصنف</th>
-                    <th className="text-center py-2 font-medium">الكمية</th>
-                    <th className="text-center py-2 font-medium">سعر/كجم</th>
+                    <th className="text-right py-2 font-medium">{isPiece ? 'النوع' : 'الصنف'}</th>
+                    <th className="text-center py-2 font-medium">{isPiece ? 'الكمية (حبة)' : 'الكمية'}</th>
+                    <th className="text-center py-2 font-medium">{isPiece ? 'السعر' : 'سعر/كجم'}</th>
                     <th className="text-left py-2 font-medium">المجموع</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b border-dashed">
-                    <td className="py-2 text-right text-neutral-800">{inv.chickenType || 'شاورما مبرد (فريش)'}</td>
-                    <td className="py-2 text-center text-neutral-800">{inv.quantityKg} كجم</td>
-                    <td className="py-2 text-center text-neutral-800">{formatSAR(inv.pricePerKg)} ر.س</td>
+                    <td className="py-2 text-right text-neutral-800">{itemLabel}</td>
+                    <td className="py-2 text-center text-neutral-800">
+                      {isPiece ? `${inv.pieces ?? 0} حبة` : `${inv.quantityKg} كجم`}
+                    </td>
+                    <td className="py-2 text-center text-neutral-800">
+                      {formatSAR(isPiece ? (inv.pricePerPiece ?? 0) : inv.pricePerKg)} ر.س
+                    </td>
                     <td className="py-2 text-left font-semibold text-neutral-900">{formatSAR(totalAmount)} ر.س</td>
                   </tr>
                 </tbody>

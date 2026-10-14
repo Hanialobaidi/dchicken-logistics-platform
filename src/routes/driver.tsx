@@ -35,7 +35,7 @@ import { Moon, Sun } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { directOrdersTable, invoicesTable } from '@/lib/db'
 import { clearDriverSession } from '@/hooks/useDrivers'
-import { InvoicePreview, computeTaxFields } from '@/components/InvoicePreview'
+import { InvoicePreview, computeTaxFromTotal } from '@/components/InvoicePreview'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import type { InvoiceData } from '@/components/InvoicePreview'
@@ -43,6 +43,7 @@ import { useRefreshAll } from '@/hooks/useRefreshAll'
 import { CHICKEN_TYPES } from '@/types'
 import type { DirectOrder, Invoice } from '@/types'
 import { useChickenTypes, useCreateChickenType } from '@/hooks/useChickenTypes'
+import { useChickenSizes, useCreateChickenSize } from '@/hooks/useChickenSizes'
 import { notifyAdminNewOrder } from '@/lib/notifyAdmin'
 import {
   Truck,
@@ -172,9 +173,15 @@ function DirectOrderDialog({
   const createInvoice = useCreateInvoice()
   const { data: customTypes = [] } = useChickenTypes()
   const createChickenType = useCreateChickenType()
+  const { data: customSizes = [] } = useChickenSizes()
+  const createChickenSize = useCreateChickenSize()
   const allChickenTypes = useMemo(
     () => [...CHICKEN_TYPES, ...customTypes.map((t) => t.name)],
     [customTypes],
+  )
+  const allChickenSizes = useMemo(
+    () => customSizes.map((s) => s.name),
+    [customSizes],
   )
   const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10))
   const [restaurantMode, setRestaurantMode] = useState<'existing' | 'new'>('existing')
@@ -187,6 +194,11 @@ function DirectOrderDialog({
   const [notes, setNotes] = useState('')
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
+  const [saleUnit, setSaleUnit] = useState<'kg' | 'piece'>('kg')
+  const [chickenSize, setChickenSize] = useState<string>('')
+  const [customChickenSize, setCustomChickenSize] = useState('')
+  const [pieces, setPieces] = useState('')
+  const [pricePerPiece, setPricePerPiece] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Invoice preview state
@@ -211,10 +223,14 @@ function DirectOrderDialog({
     })
   }
 
+  const isPiece = saleUnit === 'piece'
   const weightNum = Number(actualWeight) || 0
   const priceNum = Number(pricePerKg) || 0
-  const totalPrice = weightNum * priceNum
-  const taxFields = weightNum > 0 && priceNum > 0 ? computeTaxFields(weightNum, priceNum) : null
+  const piecesNum = Number(pieces) || 0
+  const pricePerPieceNum = Number(pricePerPiece) || 0
+  const effectiveSize = chickenSize === '__add__' ? customChickenSize.trim() : chickenSize
+  const totalPrice = isPiece ? piecesNum * pricePerPieceNum : weightNum * priceNum
+  const taxFields = totalPrice > 0 ? computeTaxFromTotal(totalPrice) : null
 
   // Find selected restaurant's tax number
   const selectedRestaurantObj = restaurants.find((r) => r.id === selectedRestaurant)
@@ -232,6 +248,11 @@ function DirectOrderDialog({
     setNotes('')
     setChickenType(CHICKEN_TYPES[0])
     setCustomChickenType('')
+    setSaleUnit('kg')
+    setChickenSize('')
+    setCustomChickenSize('')
+    setPieces('')
+    setPricePerPiece('')
   }
 
   const handleClose = () => {
@@ -246,15 +267,21 @@ function DirectOrderDialog({
         ? restaurants.find((r) => r.id === selectedRestaurant)?.name
         : newRestaurantName.trim()
 
-    if (!name || !actualWeight.trim() || !pricePerKg) return
+    const validAmount = isPiece
+      ? !!pieces.trim() && !!pricePerPiece && !!effectiveSize
+      : !!actualWeight.trim() && !!pricePerKg
+    if (!name || !validAmount) return
 
     setIsSubmitting(true)
     try {
       const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
 
-      // Save new chicken type if custom
+      // Save new chicken type / size if custom
       if (chickenType === '__add__' && customChickenType.trim()) {
         await createChickenType.mutateAsync(customChickenType.trim())
+      }
+      if (isPiece && chickenSize === '__add__' && customChickenSize.trim()) {
+        await createChickenSize.mutateAsync(customChickenSize.trim())
       }
 
       const createdOrder = await createDirectOrder.mutateAsync({
@@ -262,15 +289,19 @@ function DirectOrderDialog({
         driverName,
         orderDate,
         restaurantName: name,
-        actualWeight: weightNum,
+        actualWeight: isPiece ? 0 : weightNum,
         notes: notes.trim() || undefined,
         status: 'pending',
-        pricePerKg: priceNum,
+        pricePerKg: isPiece ? 0 : priceNum,
         paymentMethod,
         totalPrice,
         restaurantTaxNumber,
         chickenType: effectiveChickenType,
         paymentStatus,
+        saleUnit,
+        unitSize: isPiece ? effectiveSize : null,
+        pieces: isPiece ? piecesNum : 0,
+        pricePerPiece: isPiece ? pricePerPieceNum : 0,
       })
 
       // Save invoice record (linked to order)
@@ -285,8 +316,8 @@ function DirectOrderDialog({
           driverName,
           driverId,
           itemDescription: effectiveChickenType,
-          quantityKg: weightNum,
-          pricePerKg: priceNum,
+          quantityKg: isPiece ? 0 : weightNum,
+          pricePerKg: isPiece ? 0 : priceNum,
           subtotalBeforeTax: taxFields?.subtotalBeforeTax ?? 0,
           vatAmount: taxFields?.vatAmount ?? 0,
           totalAmount: totalPrice,
@@ -295,6 +326,10 @@ function DirectOrderDialog({
           pdfUrl: undefined,
           paymentStatus,
           chickenType: effectiveChickenType,
+          saleUnit,
+          unitSize: isPiece ? effectiveSize : null,
+          pieces: isPiece ? piecesNum : 0,
+          pricePerPiece: isPiece ? pricePerPieceNum : 0,
         })
       } catch (invoiceErr) {
         console.error('[NewOrder] Invoice creation failed:', invoiceErr)
@@ -307,11 +342,15 @@ function DirectOrderDialog({
         restaurantName: name,
         restaurantTaxNumber,
         driverName,
-        quantityKg: weightNum,
-        pricePerKg: priceNum,
+        quantityKg: isPiece ? 0 : weightNum,
+        pricePerKg: isPiece ? 0 : priceNum,
         paymentMethod,
         paymentStatus,
         chickenType: effectiveChickenType,
+        saleUnit,
+        unitSize: isPiece ? effectiveSize : undefined,
+        pieces: isPiece ? piecesNum : undefined,
+        pricePerPiece: isPiece ? pricePerPieceNum : undefined,
       })
 
       // Fire push notification to admin (best-effort, non-blocking)
@@ -419,7 +458,40 @@ function DirectOrderDialog({
               )}
             </div>
 
-            {/* Weight + Price */}
+            {/* Sale unit */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">طريقة البيع <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSaleUnit('kg')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-lg border-2 p-3 transition-all cursor-pointer',
+                    saleUnit === 'kg'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-muted bg-muted/30 text-muted-foreground hover:border-primary/30'
+                  )}
+                >
+                  <Weight className="h-5 w-5" />
+                  <span className="text-sm font-medium">بالكيلو</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSaleUnit('piece')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-lg border-2 p-3 transition-all cursor-pointer',
+                    saleUnit === 'piece'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-muted bg-muted/30 text-muted-foreground hover:border-primary/30'
+                  )}
+                >
+                  <Package className="h-5 w-5" />
+                  <span className="text-sm font-medium">بالحبة</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Chicken type */}
             <div className="space-y-1.5">
               <Label className="text-sm">نوع الدجاج <span className="text-destructive">*</span></Label>
               <Select value={chickenType} onValueChange={setChickenType}>
@@ -453,35 +525,102 @@ function DirectOrderDialog({
               )}
             </div>
 
-            {/* Weight + Price */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Chicken size (piece mode only) */}
+            {isPiece && (
               <div className="space-y-1.5">
-                <Label htmlFor="actualWeight" className="text-sm">الكمية (كجم)</Label>
-                <Input
-                  id="actualWeight"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  placeholder="الكمية..."
-                  value={actualWeight}
-                  onChange={(e) => setActualWeight(e.target.value)}
-                  className="text-right h-11"
-                />
+                <Label className="text-sm">حجم الدجاج <span className="text-destructive">*</span></Label>
+                <Select value={chickenSize} onValueChange={setChickenSize}>
+                  <SelectTrigger className="h-11 text-right w-full">
+                    <SelectValue placeholder="اختر حجم الدجاج..." />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {allChickenSizes.map((cs) => (
+                      <SelectItem key={cs} value={cs}>
+                        {cs}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__add__" className="text-primary font-medium">+ إضافة حجم جديد</SelectItem>
+                  </SelectContent>
+                </Select>
+                {chickenSize === '__add__' && (
+                  <Input
+                    placeholder="اكتب حجم الدجاج الجديد..."
+                    value={customChickenSize}
+                    onChange={(e) => setCustomChickenSize(e.target.value)}
+                    onBlur={async () => {
+                      if (customChickenSize.trim()) {
+                        await createChickenSize.mutateAsync(customChickenSize.trim())
+                        setChickenSize(customChickenSize.trim())
+                        setCustomChickenSize('')
+                      }
+                    }}
+                    className="text-right h-11"
+                    autoFocus
+                  />
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pricePerKg" className="text-sm">سعر الكيلو (ريال)</Label>
-                <Input
-                  id="pricePerKg"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="السعر..."
-                  value={pricePerKg}
-                  onChange={(e) => setPricePerKg(e.target.value)}
-                  className="text-right h-11"
-                />
+            )}
+
+            {/* Quantity + Price */}
+            {isPiece ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="pieces" className="text-sm">عدد الحبات <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="pieces"
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="عدد الحبات..."
+                    value={pieces}
+                    onChange={(e) => setPieces(e.target.value)}
+                    className="text-right h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pricePerPiece" className="text-sm">سعر الحبة (ريال) <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="pricePerPiece"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="سعر الحبة..."
+                    value={pricePerPiece}
+                    onChange={(e) => setPricePerPiece(e.target.value)}
+                    className="text-right h-11"
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="actualWeight" className="text-sm">الكمية (كجم)</Label>
+                  <Input
+                    id="actualWeight"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="الكمية..."
+                    value={actualWeight}
+                    onChange={(e) => setActualWeight(e.target.value)}
+                    className="text-right h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pricePerKg" className="text-sm">سعر الكيلو (ريال)</Label>
+                  <Input
+                    id="pricePerKg"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="السعر..."
+                    value={pricePerKg}
+                    onChange={(e) => setPricePerKg(e.target.value)}
+                    className="text-right h-11"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Payment method */}
             <div className="space-y-1.5">
@@ -544,7 +683,7 @@ function DirectOrderDialog({
             </div>
 
             {/* Live price calculation */}
-            {weightNum > 0 && priceNum > 0 && (
+            {totalPrice > 0 && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">المجموع الخاضع للضريبة</span>
@@ -591,8 +730,9 @@ function DirectOrderDialog({
               onClick={handleSubmit}
               disabled={
                 isSubmitting ||
-                !actualWeight.trim() ||
-                !pricePerKg ||
+                (isPiece
+                  ? (!pieces.trim() || !pricePerPiece || !effectiveSize)
+                  : (!actualWeight.trim() || !pricePerKg)) ||
                 (restaurantMode === 'existing' && !selectedRestaurant) ||
                 (restaurantMode === 'new' && !newRestaurantName.trim())
               }
@@ -666,6 +806,7 @@ function DirectOrderCard({
   const cfg = DIRECT_ORDER_STATUS_CONFIG[order.status] ?? DIRECT_ORDER_STATUS_CONFIG.pending
   const paymentLabel = PAYMENT_METHODS.find((p) => p.value === order.paymentMethod)?.label ?? order.paymentMethod
   const canModify = order.status === 'pending'
+  const isPiece = order.saleUnit === 'piece'
   return (
     <div
       className={cn(
@@ -682,8 +823,9 @@ function DirectOrderCard({
           <div>
             <p className="text-sm font-semibold">{order.restaurantName}</p>
             <p className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
-              <Weight className="h-3 w-3" />
-              {order.actualWeight} كجم
+              {isPiece ? <Package className="h-3 w-3" /> : <Weight className="h-3 w-3" />}
+              {isPiece ? `${order.pieces ?? 0} حبة` : `${order.actualWeight} كجم`}
+              {isPiece && order.unitSize && <span className="mr-0.5">({order.unitSize})</span>}
               <span className="mx-0.5">·</span>
               {order.totalPrice > 0 && (
                 <>
@@ -742,6 +884,10 @@ function DirectOrderCard({
                 paymentMethod: inv.paymentMethod,
                 paymentStatus: (inv.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
                 chickenType: inv.chickenType,
+                saleUnit: inv.saleUnit,
+                unitSize: inv.unitSize ?? undefined,
+                pieces: inv.pieces,
+                pricePerPiece: inv.pricePerPiece,
               })
               return
             }
@@ -763,6 +909,10 @@ function DirectOrderCard({
                 paymentMethod: found.paymentMethod,
                 paymentStatus: (found.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
                 chickenType: found.chickenType,
+                saleUnit: found.saleUnit,
+                unitSize: found.unitSize ?? undefined,
+                pieces: found.pieces,
+                pricePerPiece: found.pricePerPiece,
               })
             } else {
               onViewInvoice({
@@ -776,6 +926,10 @@ function DirectOrderCard({
                 paymentMethod: order.paymentMethod,
                 paymentStatus: (order.paymentStatus as 'paid' | 'unpaid') ?? 'unpaid',
                 chickenType: order.chickenType,
+                saleUnit: order.saleUnit,
+                unitSize: order.unitSize ?? undefined,
+                pieces: order.pieces,
+                pricePerPiece: order.pricePerPiece,
               })
             }
           }}
@@ -812,6 +966,10 @@ function EditOrderDialog({
     paymentStatus: string
     chickenType: string
     notes: string | null
+    saleUnit?: 'kg' | 'piece'
+    unitSize?: string | null
+    pieces?: number
+    pricePerPiece?: number
   } | null
   driverId: string
   driverName: string
@@ -822,13 +980,24 @@ function EditOrderDialog({
   const createInvoice = useCreateInvoice()
   const { data: customTypes = [] } = useChickenTypes()
   const createChickenType = useCreateChickenType()
+  const { data: customSizes = [] } = useChickenSizes()
+  const createChickenSize = useCreateChickenSize()
   const allChickenTypes = useMemo(
     () => [...CHICKEN_TYPES, ...customTypes.map((t) => t.name)],
     [customTypes],
   )
+  const allChickenSizes = useMemo(
+    () => customSizes.map((s) => s.name),
+    [customSizes],
+  )
 
+  const [saleUnit, setSaleUnit] = useState<'kg' | 'piece'>('kg')
   const [actualWeight, setActualWeight] = useState('')
   const [pricePerKg, setPricePerKg] = useState('')
+  const [chickenSize, setChickenSize] = useState('')
+  const [customChickenSize, setCustomChickenSize] = useState('')
+  const [pieces, setPieces] = useState('')
+  const [pricePerPiece, setPricePerPiece] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [chickenType, setChickenType] = useState<string>(CHICKEN_TYPES[0])
   const [customChickenType, setCustomChickenType] = useState('')
@@ -836,8 +1005,16 @@ function EditOrderDialog({
 
   useEffect(() => {
     if (order && open) {
+      const unit = order.saleUnit === 'piece' ? 'piece' : 'kg'
+      setSaleUnit(unit)
       setActualWeight(String(order.actualWeight || ''))
       setPricePerKg(String(order.pricePerKg || ''))
+      setPieces(String(order.pieces || ''))
+      setPricePerPiece(String(order.pricePerPiece || ''))
+      const size = order.unitSize || ''
+      const isKnownSize = allChickenSizes.includes(size)
+      setChickenSize(size && isKnownSize ? size : size ? '__add__' : '')
+      setCustomChickenSize(size && !isKnownSize ? size : '')
       setPaymentMethod(order.paymentMethod || 'cash')
       const isKnownType = allChickenTypes.includes(order.chickenType)
       setChickenType(isKnownType ? order.chickenType : '__add__')
@@ -846,28 +1023,42 @@ function EditOrderDialog({
     }
   }, [order, open])
 
+  const isPiece = saleUnit === 'piece'
   const weightNum = Number(actualWeight) || 0
   const priceNum = Number(pricePerKg) || 0
-  const totalPrice = weightNum * priceNum
-  const taxFields = weightNum > 0 && priceNum > 0 ? computeTaxFields(weightNum, priceNum) : null
+  const piecesNum = Number(pieces) || 0
+  const pricePerPieceNum = Number(pricePerPiece) || 0
+  const effectiveSize = chickenSize === '__add__' ? customChickenSize.trim() : chickenSize
+  const totalPrice = isPiece ? piecesNum * pricePerPieceNum : weightNum * priceNum
+  const taxFields = totalPrice > 0 ? computeTaxFromTotal(totalPrice) : null
 
   const isSubmitting = updateOrder.isPending || createInvoice.isPending
 
   const handleSubmit = async () => {
-    if (!order || !actualWeight.trim() || !pricePerKg) return
+    const validAmount = isPiece
+      ? !!pieces.trim() && !!pricePerPiece && !!effectiveSize
+      : !!actualWeight.trim() && !!pricePerKg
+    if (!order || !validAmount) return
     const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
     if (chickenType === '__add__' && customChickenType.trim()) {
       await createChickenType.mutateAsync(customChickenType.trim())
     }
+    if (isPiece && chickenSize === '__add__' && customChickenSize.trim()) {
+      await createChickenSize.mutateAsync(customChickenSize.trim())
+    }
 
     await updateOrder.mutateAsync({
       id: order.id,
-      actualWeight: weightNum,
-      pricePerKg: priceNum,
+      actualWeight: isPiece ? 0 : weightNum,
+      pricePerKg: isPiece ? 0 : priceNum,
       totalPrice,
       paymentMethod,
       chickenType: effectiveChickenType,
       notes: notes.trim() || null,
+      saleUnit,
+      unitSize: isPiece ? effectiveSize : null,
+      pieces: isPiece ? piecesNum : 0,
+      pricePerPiece: isPiece ? pricePerPieceNum : 0,
     })
     toast.success('تم تعديل الطلبية')
     onSaved()
@@ -875,20 +1066,30 @@ function EditOrderDialog({
   }
 
   const handleIssueInvoice = async () => {
-    if (!order || !actualWeight.trim() || !pricePerKg) return
+    const validAmount = isPiece
+      ? !!pieces.trim() && !!pricePerPiece && !!effectiveSize
+      : !!actualWeight.trim() && !!pricePerKg
+    if (!order || !validAmount) return
     const effectiveChickenType = chickenType === '__add__' ? customChickenType.trim() : chickenType
     if (chickenType === '__add__' && customChickenType.trim()) {
       await createChickenType.mutateAsync(customChickenType.trim())
     }
+    if (isPiece && chickenSize === '__add__' && customChickenSize.trim()) {
+      await createChickenSize.mutateAsync(customChickenSize.trim())
+    }
 
     await updateOrder.mutateAsync({
       id: order.id,
-      actualWeight: weightNum,
-      pricePerKg: priceNum,
+      actualWeight: isPiece ? 0 : weightNum,
+      pricePerKg: isPiece ? 0 : priceNum,
       totalPrice,
       paymentMethod,
       chickenType: effectiveChickenType,
       notes: notes.trim() || null,
+      saleUnit,
+      unitSize: isPiece ? effectiveSize : null,
+      pieces: isPiece ? piecesNum : 0,
+      pricePerPiece: isPiece ? pricePerPieceNum : 0,
     })
 
     const invoiceNum = `INV-${Date.now().toString(36).toUpperCase()}`
@@ -901,8 +1102,8 @@ function EditOrderDialog({
       driverName,
       driverId,
       itemDescription: effectiveChickenType,
-      quantityKg: weightNum,
-      pricePerKg: priceNum,
+      quantityKg: isPiece ? 0 : weightNum,
+      pricePerKg: isPiece ? 0 : priceNum,
       subtotalBeforeTax: taxFields?.subtotalBeforeTax ?? 0,
       vatAmount: taxFields?.vatAmount ?? 0,
       totalAmount: totalPrice,
@@ -911,6 +1112,10 @@ function EditOrderDialog({
       pdfUrl: undefined,
       paymentStatus: order.paymentStatus,
       chickenType: effectiveChickenType,
+      saleUnit,
+      unitSize: isPiece ? effectiveSize : null,
+      pieces: isPiece ? piecesNum : 0,
+      pricePerPiece: isPiece ? pricePerPieceNum : 0,
     })
 
     onSaved()
@@ -922,11 +1127,15 @@ function EditOrderDialog({
       restaurantName: order.restaurantName,
       restaurantTaxNumber: order.restaurantTaxNumber,
       driverName,
-      quantityKg: weightNum,
-      pricePerKg: priceNum,
+      quantityKg: isPiece ? 0 : weightNum,
+      pricePerKg: isPiece ? 0 : priceNum,
       paymentMethod,
       paymentStatus: order.paymentStatus as 'paid' | 'unpaid',
       chickenType: effectiveChickenType,
+      saleUnit,
+      unitSize: isPiece ? effectiveSize : undefined,
+      pieces: isPiece ? piecesNum : undefined,
+      pricePerPiece: isPiece ? pricePerPieceNum : undefined,
     })
 
     toast.success('تم تعديل الطلبية وإصدار الفاتورة')
@@ -942,6 +1151,37 @@ function EditOrderDialog({
           <p className="text-xs text-muted-foreground mt-0.5">{order.restaurantName}</p>
         </div>
         <div className="overflow-y-auto max-h-[70vh] px-6 py-4 space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm">طريقة البيع</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSaleUnit('kg')}
+                className={cn(
+                  'flex items-center justify-center gap-2 rounded-lg border-2 p-3 transition-all cursor-pointer',
+                  saleUnit === 'kg'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-muted bg-muted/30 text-muted-foreground'
+                )}
+              >
+                <Weight className="h-5 w-5" />
+                <span className="text-sm font-medium">بالكيلو</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSaleUnit('piece')}
+                className={cn(
+                  'flex items-center justify-center gap-2 rounded-lg border-2 p-3 transition-all cursor-pointer',
+                  saleUnit === 'piece'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-muted bg-muted/30 text-muted-foreground'
+                )}
+              >
+                <Package className="h-5 w-5" />
+                <span className="text-sm font-medium">بالحبة</span>
+              </button>
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label className="text-sm">نوع الدجاج</Label>
             <Select value={chickenType} onValueChange={setChickenType}>
@@ -972,30 +1212,89 @@ function EditOrderDialog({
               />
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          {isPiece && (
             <div className="space-y-1.5">
-              <Label className="text-sm">الكمية (كجم)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                min="0"
-                value={actualWeight}
-                onChange={(e) => setActualWeight(e.target.value)}
-                className="text-right h-11"
-              />
+              <Label className="text-sm">حجم الدجاج</Label>
+              <Select value={chickenSize} onValueChange={setChickenSize}>
+                <SelectTrigger className="h-11 text-right w-full">
+                  <SelectValue placeholder="اختر حجم الدجاج..." />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {allChickenSizes.map((cs) => (
+                    <SelectItem key={cs} value={cs}>{cs}</SelectItem>
+                  ))}
+                  <SelectItem value="__add__" className="text-primary font-medium">+ إضافة حجم جديد</SelectItem>
+                </SelectContent>
+              </Select>
+              {chickenSize === '__add__' && (
+                <Input
+                  placeholder="اكتب حجم الدجاج الجديد..."
+                  value={customChickenSize}
+                  onChange={(e) => setCustomChickenSize(e.target.value)}
+                  onBlur={async () => {
+                    if (customChickenSize.trim()) {
+                      await createChickenSize.mutateAsync(customChickenSize.trim())
+                      setChickenSize(customChickenSize.trim())
+                      setCustomChickenSize('')
+                    }
+                  }}
+                  className="text-right h-11"
+                  autoFocus
+                />
+              )}
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">سعر الكيلو (ريال)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={pricePerKg}
-                onChange={(e) => setPricePerKg(e.target.value)}
-                className="text-right h-11"
-              />
+          )}
+          {isPiece ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">عدد الحبات</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={pieces}
+                  onChange={(e) => setPieces(e.target.value)}
+                  className="text-right h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">سعر الحبة (ريال)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={pricePerPiece}
+                  onChange={(e) => setPricePerPiece(e.target.value)}
+                  className="text-right h-11"
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">الكمية (كجم)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={actualWeight}
+                  onChange={(e) => setActualWeight(e.target.value)}
+                  className="text-right h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">سعر الكيلو (ريال)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={pricePerKg}
+                  onChange={(e) => setPricePerKg(e.target.value)}
+                  className="text-right h-11"
+                />
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label className="text-sm">طريقة الدفع</Label>
             <div className="grid grid-cols-3 gap-2">
@@ -1020,7 +1319,7 @@ function EditOrderDialog({
               })}
             </div>
           </div>
-          {weightNum > 0 && priceNum > 0 && (
+          {totalPrice > 0 && (
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
               <div className="flex justify-between text-base font-bold">
                 <span>الإجمالي</span>
@@ -1051,14 +1350,24 @@ function EditOrderDialog({
           <Button
             variant="outline"
             onClick={handleSubmit}
-            disabled={isSubmitting || !actualWeight.trim() || !pricePerKg}
+            disabled={
+              isSubmitting ||
+              (isPiece
+                ? (!pieces.trim() || !pricePerPiece || !effectiveSize)
+                : (!actualWeight.trim() || !pricePerKg))
+            }
             className="flex-1 gap-2"
           >
             حفظ فقط
           </Button>
           <Button
             onClick={handleIssueInvoice}
-            disabled={isSubmitting || !actualWeight.trim() || !pricePerKg}
+            disabled={
+              isSubmitting ||
+              (isPiece
+                ? (!pieces.trim() || !pricePerPiece || !effectiveSize)
+                : (!actualWeight.trim() || !pricePerKg))
+            }
             className="flex-1 gap-2"
           >
             تعديل وإصدار فاتورة
@@ -1078,7 +1387,7 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
   const { data: directOrders = [] } = useQuery({
     queryKey: ['directOrders', { driverId }],
     queryFn: () => directOrdersTable.list<DirectOrder>({
-      select: 'id, restaurant_name, actual_weight, status, price_per_kg, payment_method, total_price, chicken_type, order_date, created_at',
+      select: 'id, restaurant_name, actual_weight, status, price_per_kg, payment_method, total_price, chicken_type, order_date, created_at, sale_unit, unit_size, pieces, price_per_piece',
       where: { driverId },
       orderBy: { createdAt: 'desc' },
       limit: 100,
@@ -1253,8 +1562,8 @@ function ReportOverlay({ driverId, driverName, onClose }: { driverId: string; dr
                         <td className="py-2 font-medium">{order.restaurantName}</td>
                         <td className="py-2 text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Weight className="h-3 w-3" />
-                            {order.actualWeight} كجم
+                            {order.saleUnit === 'piece' ? <Package className="h-3 w-3" /> : <Weight className="h-3 w-3" />}
+                            {order.saleUnit === 'piece' ? `${order.pieces ?? 0} حبة` : `${order.actualWeight} كجم`}
                           </span>
                         </td>
                         <td className="py-2">{formatPrice(order.totalPrice || 0)}</td>
@@ -1357,7 +1666,7 @@ function DriverDashboard() {
   const { data: directOrders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ['directOrders', { driverId: effectiveDriverId }],
     queryFn: () => directOrdersTable.list<DirectOrder>({
-      select: 'id, driver_id, restaurant_name, actual_weight, notes, status, created_at, price_per_kg, payment_method, total_price, restaurant_tax_number, chicken_type, payment_status, order_date, driver_name, invoice_image_url, owner_id',
+      select: 'id, driver_id, restaurant_name, actual_weight, notes, status, created_at, price_per_kg, payment_method, total_price, restaurant_tax_number, chicken_type, payment_status, order_date, driver_name, invoice_image_url, owner_id, sale_unit, unit_size, pieces, price_per_piece',
       where: { driverId: effectiveDriverId },
       orderBy: { createdAt: 'desc' },
       limit: 100,
@@ -1368,7 +1677,7 @@ function DriverDashboard() {
   const { data: allInvoices = [] } = useQuery({
     queryKey: ['invoices', { driverId: effectiveDriverId }],
     queryFn: () => invoicesTable.list<Invoice>({
-      select: 'id, order_id, invoice_number, invoice_date, restaurant_name, restaurant_tax_number, driver_name, quantity_kg, price_per_kg, payment_method, payment_status, chicken_type',
+      select: 'id, order_id, invoice_number, invoice_date, restaurant_name, restaurant_tax_number, driver_name, quantity_kg, price_per_kg, payment_method, payment_status, chicken_type, sale_unit, unit_size, pieces, price_per_piece',
       where: { driverId: effectiveDriverId },
       orderBy: { createdAt: 'desc' },
       limit: 100,

@@ -48,7 +48,7 @@ function DriverReportPage() {
   const { data: directOrders = [] } = useQuery({
     queryKey: ['directOrders', { driverId: effectiveDriverId }],
     queryFn: () => directOrdersTable.list<DirectOrder>({
-      select: 'id, restaurant_name, actual_weight, status, price_per_kg, payment_method, total_price, chicken_type, order_date, created_at',
+      select: 'id, restaurant_name, actual_weight, status, price_per_kg, payment_method, total_price, chicken_type, order_date, created_at, sale_unit, unit_size, pieces, price_per_piece',
       where: { driverId: effectiveDriverId },
       orderBy: { createdAt: 'desc' },
       limit: 100,
@@ -250,7 +250,7 @@ function DriverReportPage() {
                         <td className="py-2 text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Weight className="h-3 w-3" />
-                            {order.actualWeight} كجم
+                            {order.saleUnit === 'piece' ? `${order.pieces ?? 0} حبة` : `${order.actualWeight} كجم`}
                           </span>
                         </td>
                         <td className="py-2">{formatPrice(order.totalPrice || 0)}</td>

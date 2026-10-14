@@ -19,6 +19,7 @@ import { Route as AppDriversRouteImport } from './routes/app.drivers'
 import { Route as AppPurchasesRouteImport } from './routes/app.purchases'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppRestaurantsRouteImport } from './routes/app.restaurants'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as DriverDeliveryRouteImport } from './routes/driver.delivery'
 import { Route as DriverReportRouteImport } from './routes/driver.report'
 import { Route as InvoiceVerifyInvoiceNumberRouteImport } from './routes/invoice.verify.$invoiceNumber'
@@ -73,6 +74,11 @@ const AppRestaurantsRoute = AppRestaurantsRouteImport.update({
   path: '/restaurants',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const DriverDeliveryRoute = DriverDeliveryRouteImport.update({
   id: '/delivery',
   path: '/delivery',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/app/purchases': typeof AppPurchasesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/restaurants': typeof AppRestaurantsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/driver/delivery': typeof DriverDeliveryRoute
   '/driver/report': typeof DriverReportRoute
   '/app/': typeof AppIndexRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/app/purchases': typeof AppPurchasesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/restaurants': typeof AppRestaurantsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/driver/delivery': typeof DriverDeliveryRoute
   '/driver/report': typeof DriverReportRoute
   '/app': typeof AppIndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/app/purchases': typeof AppPurchasesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/restaurants': typeof AppRestaurantsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/driver/delivery': typeof DriverDeliveryRoute
   '/driver/report': typeof DriverReportRoute
   '/app/': typeof AppIndexRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/app/purchases'
     | '/app/reports'
     | '/app/restaurants'
+    | '/app/settings'
     | '/driver/delivery'
     | '/driver/report'
     | '/app/'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/app/purchases'
     | '/app/reports'
     | '/app/restaurants'
+    | '/app/settings'
     | '/driver/delivery'
     | '/driver/report'
     | '/app'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/app/purchases'
     | '/app/reports'
     | '/app/restaurants'
+    | '/app/settings'
     | '/driver/delivery'
     | '/driver/report'
     | '/app/'
@@ -261,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRestaurantsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/driver/delivery': {
       id: '/driver/delivery'
       path: '/delivery'
@@ -292,6 +311,7 @@ interface AppRouteChildren {
   AppPurchasesRoute: typeof AppPurchasesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppRestaurantsRoute: typeof AppRestaurantsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -302,6 +322,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPurchasesRoute: AppPurchasesRoute,
   AppReportsRoute: AppReportsRoute,
   AppRestaurantsRoute: AppRestaurantsRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

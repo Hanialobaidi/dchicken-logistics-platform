@@ -78,6 +78,26 @@ export interface CompanyPurchase {
   createdAt: string
 }
 
+export interface CompanySettings {
+  id: string
+  name: string
+  taxNumber: string
+  cr: string
+  address: string
+  phones: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ChickenSize {
+  id: string
+  name: string
+  ownerId: string | null
+  createdAt: string
+}
+
+export type SaleUnit = 'kg' | 'piece'
+
 export interface DirectOrder {
   id: string
   driverId: string
@@ -96,6 +116,10 @@ export interface DirectOrder {
   restaurantTaxNumber: string
   chickenType: string
   paymentStatus: string
+  saleUnit?: SaleUnit
+  unitSize?: string | null
+  pieces?: number
+  pricePerPiece?: number
 }
 
 export interface Invoice {
@@ -120,6 +144,10 @@ export interface Invoice {
   createdAt: string
   chickenType: string
   paymentStatus: string
+  saleUnit?: SaleUnit
+  unitSize?: string | null
+  pieces?: number
+  pricePerPiece?: number
 }
 
 export type UserRole = 'admin' | 'driver' | null
